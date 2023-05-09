@@ -1,0 +1,3 @@
+---- motionOccur Matches (2 in 2 files) ----
+app_task.c (TN09_Air700F_app\Task) line 796 : void motionOccur(void)
+app_task.h (TN09_Air700F_app\Task\inc) line 188 : void motionOccur(void);
