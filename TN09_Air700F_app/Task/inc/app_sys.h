@@ -56,6 +56,7 @@ typedef struct
     uint8_t kernalRun				: 1;
     uint8_t sleep					: 1;
     uint8_t first					: 1;
+    uint8_t ledfirst				: 1;
     uint8_t lbsExtendEvt;
     uint8_t wifiExtendEvt;
     uint8_t ringWakeUpTick;

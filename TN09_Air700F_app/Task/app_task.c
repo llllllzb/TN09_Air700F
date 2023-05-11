@@ -274,7 +274,7 @@ void ledStatusUpdate(uint8_t status, uint8_t onoff)
 
 static void ledTask(void)
 {
-    if (sysinfo.sysTick >= 300 && sysparam.ledctrl == 0)
+    if (sysparam.ledctrl == 0 && (sysinfo.sysTick >= 300 || sysinfo.ledfirst))
     {
         SYS_LED1_OFF;
         return;
@@ -1355,7 +1355,6 @@ static void modeStart(void)
     sysinfo.runStartTick = sysinfo.sysTick;
     sysinfo.gpsuploadonepositiontime = 180;
     updateRTCtimeRequest();
-    //portFsclkChange(0);
     switch (sysparam.MODE)
     {
         case MODE1:
@@ -1482,6 +1481,7 @@ static void modeDone(void)
     	if (sysinfo.sleep && isModulePowerOn() == 0)
     	{
 			tmos_set_event(sysinfo.taskId, APP_TASK_STOP_EVENT);
+			sysinfo.ledfirst = 1;
     	}
     }
 }
