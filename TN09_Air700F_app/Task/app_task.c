@@ -1361,6 +1361,7 @@ static void modeStart(void)
             portGsensorCtl(0);
             sysparam.startUpCnt++;
             portSetNextAlarmTime();
+            paramSaveAll();
             break;
         case MODE2:
             portGsensorCtl(1);
@@ -1372,6 +1373,7 @@ static void modeStart(void)
         case MODE3:
             portGsensorCtl(0);
             sysparam.startUpCnt++;
+            paramSaveAll();
             break;
         case MODE21:
             portGsensorCtl(1);
@@ -1855,7 +1857,7 @@ void doDebugRecvPoll(uint8_t *msg, uint16_t len)
 void myTaskPreInit(void)
 {
     tmos_memset(&sysinfo, 0, sizeof(sysinfo));
-    //sysinfo.logLevel = 9;
+    sysinfo.logLevel = 9;
     SetSysClock(CLK_SOURCE_PLL_60MHz);
     portGpioSetDefCfg();
     portUartCfg(APPUSART2, 1, 115200, doDebugRecvPoll);

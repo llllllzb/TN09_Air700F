@@ -1,3 +1,7 @@
----- motionOccur Matches (2 in 2 files) ----
-app_task.c (TN09_Air700F_app\Task) line 796 : void motionOccur(void)
-app_task.h (TN09_Air700F_app\Task\inc) line 188 : void motionOccur(void);
+---- portSysReset Matches (6 in 4 files) ----
+doUPSInstruction in app_instructioncmd.c (TN09_Air700F_app\Task) :     startTimer(40, portSysReset, 0);
+doResetInstruction in app_instructioncmd.c (TN09_Air700F_app\Task) :     startTimer(50, portSysReset, 0);
+app_port.c (TN09_Air700F_app\Task) line 598 : void portSysReset(void)
+portUpdateRtcDateTime in app_port.c (TN09_Air700F_app\Task) :         portSysReset();
+app_port.h (TN09_Air700F_app\Task\inc) line 101 : void portSysReset(void);
+rebootEveryDay in app_task.c (TN09_Air700F_app\Task) :     //    portSysReset();
