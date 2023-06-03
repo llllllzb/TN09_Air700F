@@ -1000,47 +1000,42 @@ static void voltageCheckTask(void)
 {
     static uint16_t lowpowertick = 0;
     static uint8_t  lowwflag = 0;
+    static uint8_t runTick = 0;
+    static uint8_t stopTick = 0;
     float x;
 
-    if (isModeRun() == 0)
+    if (isModeDone())
     {
 		return;
     }
     x = portGetAdcVol(ADC_CHANNEL);
     sysinfo.outsidevoltage = x ;
     sysinfo.insidevoltage = sysinfo.outsidevoltage;
-	//LogPrintf(DEBUG_ALL, "x:%.2f, outvol:%.2f", x, sysinfo.outsidevoltage);
-    //低电报警
-//    if (sysinfo.outsidevoltage < sysinfo.lowvoltage)
-//    {
-//        lowpowertick++;
-//        if (lowpowertick >= 30)
-//        {
-//            if (lowwflag == 0)
-//            {
-//                lowwflag = 1;
-//                LogPrintf(DEBUG_ALL, "power supply too low %.2fV", sysinfo.outsidevoltage);
-//                //低电报警
-//                jt808UpdateAlarm(JT808_LOWVOLTAE_ALARM, 1);
-//                alarmRequestSet(ALARM_LOWV_REQUEST);
-//                lbsRequestSet(DEV_EXTEND_OF_MY);
-//                wifiRequestSet(DEV_EXTEND_OF_MY);
-//                gpsRequestSet(GPS_REQUEST_UPLOAD_ONE);
-//            }
-//
-//        }
-//    }
-//    else
-//    {
-//        lowpowertick = 0;
-//    }
-
-
-//    if (sysinfo.outsidevoltage >= sysinfo.lowvoltage + 0.5)
-//    {
-//        lowwflag = 0;
-//        jt808UpdateAlarm(JT808_LOWVOLTAE_ALARM, 0);
-//    }
+	LogPrintf(DEBUG_ALL, "x:%.2f, outvol:%.2f", x, sysinfo.outsidevoltage);
+	if (sysinfo.outsidevoltage < 2.5)
+	{
+		runTick = 0;
+		if (stopTick++ >= 5)
+		{
+			stopTick = 5;
+			sysinfo.canRunFlag = 0;
+		}
+	}
+	else if (sysinfo.outsidevoltage >= 2.7)
+	{
+		stopTick = 0;
+		if (runTick++ >= 5)
+		{
+			runTick = 5;
+			sysinfo.canRunFlag = 1;
+		}
+	}
+	else
+	{
+		stopTick = 0;
+		runTick = 0;
+		sysinfo.canRunFlag = 0;
+	}
 }
 
 /**************************************************
@@ -1082,7 +1077,7 @@ static void modeShutDownQuickly(void)
 }
 
 /**************************************************
-@bref		模式启动
+@bref		关机
 @param
 @return
 @note
@@ -1091,8 +1086,30 @@ static void modeShutDownQuickly(void)
 void modeTryToStop(void)
 {
     sysinfo.gpsRequest = 0;
+    sysinfo.alarmRequest = 0;
+    sysinfo.wifiRequest = 0;
+    sysinfo.lbsRequest = 0;
     changeModeFsm(MODE_STOP);
+    LogMessage(DEBUG_ALL, "modeTryToStop");
 }
+
+/**************************************************
+@bref		待机
+@param
+@return
+@note
+**************************************************/
+
+void modeTryToDone(void)
+{
+	sysinfo.gpsRequest = 0;
+    sysinfo.alarmRequest = 0;
+    sysinfo.wifiRequest = 0;
+    sysinfo.lbsRequest = 0;
+    changeModeFsm(MODE_DONE);
+    LogMessage(DEBUG_ALL, "modeTryToDone");
+}
+
 
 /**************************************************
 @bref		启动扫描
@@ -1214,6 +1231,8 @@ static void modeChoose(void)
 		LogPrintf(DEBUG_ALL, "modeChoose==>Ble disable");
 		bleChangeFsm(BLE_IDLE);
         changeModeFsm(MODE_START);
+        sysparam.startUpCnt++;
+        paramSaveAll();
         return;
 	}
     if (sysinfo.first == 0)
@@ -1359,9 +1378,7 @@ static void modeStart(void)
     {
         case MODE1:
             portGsensorCtl(0);
-            sysparam.startUpCnt++;
             portSetNextAlarmTime();
-            paramSaveAll();
             break;
         case MODE2:
             portGsensorCtl(1);
@@ -1372,8 +1389,6 @@ static void modeStart(void)
             break;
         case MODE3:
             portGsensorCtl(0);
-            sysparam.startUpCnt++;
-            paramSaveAll();
             break;
         case MODE21:
             portGsensorCtl(1);
@@ -1542,6 +1557,7 @@ static void sysAutoReq(void)
             if (sysinfo.kernalRun == 0)
             {
             	changeModeFsm(MODE_CHOOSE);
+            	volCheckRequest();
                 tmos_set_event(sysinfo.taskId, APP_TASK_RUN_EVENT);
             }
         }
@@ -1557,15 +1573,100 @@ static void sysAutoReq(void)
             	sysinfo.sysMinutes = 0;
                 //gpsRequestSet(GPS_REQUEST_UPLOAD_ONE);
                 LogMessage(DEBUG_ALL, "upload period");
+                portUartCfg(APPUSART2, 0, 115200, doDebugRecvPoll);
                 if (sysinfo.kernalRun == 0)
                 {
                 	changeModeFsm(MODE_CHOOSE);
+                	volCheckRequest();
                     tmos_set_event(sysinfo.taskId, APP_TASK_RUN_EVENT);
                 }
             }
         }
     }
 }
+
+/**************************************************
+@bref		电池检查请求
+@param
+@return
+@note
+**************************************************/
+
+void volCheckRequest(void)
+{
+	sysinfo.volCheckReq = 0;
+	sysinfo.canRunFlag = 0;
+	LogMessage(DEBUG_ALL, "volCheckRequest==>OK");
+}
+
+
+/**************************************************
+@bref		电池低电关机检测
+@param
+@return
+@note	0：正在检测				1：检测完成
+**************************************************/
+
+uint8_t SysBatDetection(void)
+{
+	static uint8_t waitTick = 0;
+	/*开机检测电压*/
+	if (sysinfo.volCheckReq == 0)
+    {
+        if (sysinfo.canRunFlag)
+        {
+			waitTick = 0;
+			sysinfo.volCheckReq = 1;
+			LogMessage(DEBUG_ALL, "电池电压正常，正常开机");
+        }
+        else
+        {
+			if (waitTick++ >= 6)
+			{
+				waitTick = 0;
+				changeModeFsm(MODE_DONE);
+				sysinfo.volCheckReq = 1;
+				LogMessage(DEBUG_ALL, "电池电压偏低，关机");
+			}
+        }
+        return 0;
+    }
+	/*工作时检测电压*/
+	/*不能工作*/
+	if (sysinfo.canRunFlag == 0)
+	{
+		/*如果正在工作*/
+		if (sysinfo.runFsm == MODE_RUNING)
+		{
+			modeTryToStop();
+			if (sysparam.MODE == MODE2 || sysparam.MODE == MODE21 || sysparam.MODE == MODE23)
+			{
+				if (sysinfo.gsensorOnoff == 1)
+				{
+					portGsensorCtl(0);
+				}
+			}
+		}
+		else if (sysinfo.runFsm == MODE_START || sysinfo.runFsm == MODE_CHOOSE)
+		{
+			modeTryToDone();
+		}
+	}
+	/*可以工作*/
+	else if (sysinfo.canRunFlag == 1)
+	{
+		if (sysparam.MODE == MODE2 || sysparam.MODE == MODE21 || sysparam.MODE == MODE23)
+		{
+			if (sysinfo.gsensorOnoff == 0)
+			{
+				portGsensorCtl(1);
+			}
+			gpsRequestSet(GPS_REQUEST_UPLOAD_ONE);
+		}
+	}
+	return 1;
+}
+
 
 /**************************************************
 @bref		模式运行任务
@@ -1576,6 +1677,11 @@ static void sysAutoReq(void)
 
 static void sysModeRunTask(void)
 {
+	if (SysBatDetection() == 0)
+	{
+		return;
+	}
+	
     switch (sysinfo.runFsm)
     {
     	case MODE_CHOOSE:
@@ -1869,6 +1975,8 @@ void myTaskPreInit(void)
     
     paramInit();
     socketListInit();
+    volCheckRequest();
+    ledStatusUpdate(SYSTEM_LED_RUN, 1);
     createSystemTask(ledTask, 1);
     createSystemTask(outputNode, 2);
     sysinfo.sysTaskId = createSystemTask(taskRunInSecond, 10);
@@ -1937,7 +2045,9 @@ static tmosEvents myTaskEventProcess(tmosTaskID taskID, tmosEvents events)
     }
     if (events & APP_TASK_ONEMINUTE_EVENT)
     {
+    	portUartCfg(APPUSART2, 1, 115200, doDebugRecvPoll);
         LogMessage(DEBUG_ALL, "Task one minutes");
+        
         sysAutoReq();
         return events ^ APP_TASK_ONEMINUTE_EVENT;
     }

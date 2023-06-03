@@ -57,6 +57,8 @@ typedef struct
     uint8_t sleep					: 1;
     uint8_t first					: 1;
     uint8_t ledfirst				: 1;
+    uint8_t volCheckReq				: 1;
+    uint8_t canRunFlag;	/*1:表示电压合适，可以运行      2：表示电压过低，关机*/
     uint8_t lbsExtendEvt;
     uint8_t wifiExtendEvt;
     uint8_t ringWakeUpTick;

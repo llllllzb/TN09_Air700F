@@ -186,6 +186,7 @@ void alarmRequestClear(uint16_t request);
 
 void lbsRequestSet(uint8_t ext);
 void wifiRequestSet(uint8_t ext);
+void volCheckRequest(void);
 
 void modeTryToStop(void);
 uint8_t isModeDone(void);

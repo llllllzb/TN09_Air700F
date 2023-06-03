@@ -261,7 +261,7 @@ static void doModeInstruction(ITEM *item, char *message)
     uint16_t valueofminute;
     if (item->item_data[1][0] == 0 || item->item_data[1][0] == '?')
     {
-        sprintf(message, "Mode%d,%d", sysparam.MODE, sysparam.gpsuploadgap);
+        sprintf(message, "Mode%d,%d m", sysparam.MODE, sysparam.gapMinutes);
     }
     else
     {
