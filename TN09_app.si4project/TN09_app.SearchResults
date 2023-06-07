@@ -1,7 +1,16 @@
----- portSysReset Matches (6 in 4 files) ----
-doUPSInstruction in app_instructioncmd.c (TN09_Air700F_app\Task) :     startTimer(40, portSysReset, 0);
-doResetInstruction in app_instructioncmd.c (TN09_Air700F_app\Task) :     startTimer(50, portSysReset, 0);
-app_port.c (TN09_Air700F_app\Task) line 598 : void portSysReset(void)
-portUpdateRtcDateTime in app_port.c (TN09_Air700F_app\Task) :         portSysReset();
-app_port.h (TN09_Air700F_app\Task\inc) line 101 : void portSysReset(void);
-rebootEveryDay in app_task.c (TN09_Air700F_app\Task) :     //    portSysReset();
+---- moduleReset Matches (15 in 5 files) ----
+doAtdebugCmd in app_atcmd.c (TN09_Air700F_app\Task) :     else if (mycmdPatch((uint8_t *)item.item_data[0], (uint8_t *)"MODULERESET"))
+doAtdebugCmd in app_atcmd.c (TN09_Air700F_app\Task) :         moduleReset();
+doAPNInstruction in app_instructioncmd.c (TN09_Air700F_app\Task) :         startTimer(300, moduleReset, 0);
+app_net.c (TN09_Air700F_app\Task) line 443 : void moduleReset(void)
+moduleReset in app_net.c (TN09_Air700F_app\Task) :     LogMessage(DEBUG_ALL, "moduleReset");
+netConnectTask in app_net.c (TN09_Air700F_app\Task) :                         moduleReset();
+netConnectTask in app_net.c (TN09_Air700F_app\Task) :                     moduleReset();
+netConnectTask in app_net.c (TN09_Air700F_app\Task) :                             moduleReset();
+netConnectTask in app_net.c (TN09_Air700F_app\Task) :                             moduleReset();
+netConnectTask in app_net.c (TN09_Air700F_app\Task) :                         moduleReset();
+app_net.h (TN09_Air700F_app\Task\inc) line 194 : void moduleReset(void);
+moduleRspTimeout in app_server.c (TN09_Air700F_app\Task) :     moduleReset();
+privateServerConnTask in app_server.c (TN09_Air700F_app\Task) :             moduleReset();
+privateServerConnTask in app_server.c (TN09_Air700F_app\Task) :                     moduleReset();
+jt808ServerConnTask in app_server.c (TN09_Air700F_app\Task) :             moduleReset();

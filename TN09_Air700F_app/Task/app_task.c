@@ -1001,7 +1001,6 @@ static void voltageCheckTask(void)
     static uint16_t lowpowertick = 0;
     static uint8_t  lowwflag = 0;
     static uint8_t runTick = 0;
-    static uint8_t stopTick = 0;
     float x;
 
     if (isModeDone())
@@ -1012,30 +1011,29 @@ static void voltageCheckTask(void)
     sysinfo.outsidevoltage = x ;
     sysinfo.insidevoltage = sysinfo.outsidevoltage;
 	LogPrintf(DEBUG_ALL, "x:%.2f, outvol:%.2f", x, sysinfo.outsidevoltage);
-	if (sysinfo.outsidevoltage < 2.5)
+	if (sysinfo.outsidevoltage < 2.5 && sysinfo.canRunFlag == 1)
 	{
-		runTick = 0;
-		if (stopTick++ >= 5)
-		{
-			stopTick = 5;
-			sysinfo.canRunFlag = 0;
-		}
-	}
-	else if (sysinfo.outsidevoltage >= 2.7)
-	{
-		stopTick = 0;
 		if (runTick++ >= 5)
 		{
-			runTick = 5;
+			runTick = 0;
+			sysinfo.canRunFlag = 0;
+			LogPrintf(DEBUG_ALL, "Batvoltage is lowwer than %.2f", sysinfo.outsidevoltage);
+		}
+	}
+	else if (sysinfo.outsidevoltage >= 2.7 && sysinfo.canRunFlag == 0)
+	{
+		if (runTick++ >= 5)
+		{
+			runTick = 0;
 			sysinfo.canRunFlag = 1;
+			LogPrintf(DEBUG_ALL, "Batvoltage is more than %.2f", sysinfo.outsidevoltage);
 		}
 	}
 	else
 	{
-		stopTick = 0;
 		runTick = 0;
-		sysinfo.canRunFlag = 0;
 	}
+
 }
 
 /**************************************************
@@ -1568,6 +1566,7 @@ static void sysAutoReq(void)
         {
             sysinfo.sysMinutes++;
             LogPrintf(DEBUG_ALL, "sysAutoReq==>sysMinutes:%d", sysinfo.sysMinutes);
+            portUartCfg(APPUSART2, 0, 115200, doDebugRecvPoll);
             if ((sysinfo.sysMinutes - sysparam.gapMinutes) == 0)
             {
             	sysinfo.sysMinutes = 0;
