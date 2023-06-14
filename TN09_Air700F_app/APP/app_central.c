@@ -590,7 +590,7 @@ static tmosEvents appCentralTaskEventProcess(tmosTaskID taskID, tmosEvents event
     {
         uint8_t sendData[128];
         uint8_t aes[256],aesLen;
-        sprintf(sendData, "SN:%s,%d,%.2f,%d", sysparam.SN, sysparam.startUpCnt, sysinfo.outsidevoltage, getBatteryLevel());
+        sprintf(sendData, "SN:%s,%d,%.2f,%d", dynamicParam.SN, dynamicParam.startUpCnt, sysinfo.outsidevoltage, getBatteryLevel());
         LogPrintf(DEBUG_ALL, "try to send %s", sendData);
         encryptData(aes, &aesLen, sendData, strlen(sendData));
         status = centralSendData(aes,aesLen);

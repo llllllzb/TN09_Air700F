@@ -14,8 +14,8 @@
 #define RSTKEY_HIGH         PORT_RSTKEY_H
 #define RSTKEY_LOW          PORT_RSTKEY_L
 //DTR
-#define WAKEMODULE			DTR_LOW
-#define SLEEPMODULE			DTR_HIGH
+#define WAKEMODULE			moduleSleepCtl(0)
+#define SLEEPMODULE			moduleSleepCtl(3)
 
 
 #define GPSSAVEFILE			"gpssave.bat"
@@ -75,6 +75,7 @@ typedef enum
     CBC_CMD,
 
 	//N
+	CSTT_CMD,
 	CIPMUX_CMD,
 	CIPSTART_CMD,
 	CIPCLOSE_CMD,
@@ -89,6 +90,8 @@ typedef enum
     WIFISCAN_CMD,
     CFG_CMD,
     CIICR_CMD,
+    SLEEP_CMD,
+    WAKEUP_CMD,
 } atCmdType_e;
 
 
@@ -170,6 +173,8 @@ typedef struct
     uint32_t tcpAck;
     uint32_t tcpNack;
     uint32_t fsmtick;
+
+    
 
 } moduleState_s;
 

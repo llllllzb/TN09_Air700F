@@ -428,7 +428,6 @@ static void gpsOpen(void)
 //    gpsChangeFsmState(GPSWATISTATUS);
 //    gpsClearCurrentGPSInfo();
 //    ledStatusUpdate(SYSTEM_LED_GPSOK, 0);
-//    moduleSleepCtl(0);
 //    LogMessage(DEBUG_ALL, "gpsOpen");
 
 }
@@ -470,7 +469,6 @@ static void gpsClose(void)
 //    ledStatusUpdate(SYSTEM_LED_GPSOK, 0);
 //    if (primaryServerIsReady())
 //    {
-//        moduleSleepCtl(1);
 //    }
 //    LogMessage(DEBUG_ALL, "gpsClose");
 }
@@ -780,7 +778,7 @@ static void motionStateUpdate(motion_src_e src, motionState_e newState)
     if (primaryServerIsReady())
     {
         protocolInfoResiter(getBatteryLevel(), sysinfo.outsidevoltage > 5.0 ? sysinfo.outsidevoltage : sysinfo.insidevoltage,
-                            sysparam.startUpCnt, sysparam.runTime);
+                            dynamicParam.startUpCnt, dynamicParam.runTime);
         protocolSend(NORMAL_LINK, PROTOCOL_13, NULL);
         jt808SendToServer(TERMINAL_POSITION, getLastFixedGPSInfo());
     }
@@ -1010,7 +1008,7 @@ static void voltageCheckTask(void)
     x = portGetAdcVol(ADC_CHANNEL);
     sysinfo.outsidevoltage = x ;
     sysinfo.insidevoltage = sysinfo.outsidevoltage;
-	LogPrintf(DEBUG_ALL, "x:%.2f, outvol:%.2f", x, sysinfo.outsidevoltage);
+	//LogPrintf(DEBUG_ALL, "x:%.2f, outvol:%.2f", x, sysinfo.outsidevoltage);
 	if (sysinfo.outsidevoltage < 2.5 && sysinfo.canRunFlag == 1)
 	{
 		if (runTick++ >= 5)
@@ -1194,8 +1192,8 @@ void bleConnCallBack(void)
 {
     LogMessage(DEBUG_ALL, "connect success");
     bleChangeFsm(BLE_READY);
-    sysparam.bleLinkCnt = 0;
-    paramSaveAll();
+    dynamicParam.bleLinkCnt = 0;
+    dynamicParamSaveAll();
     tmos_set_event(appCentralTaskId, APP_WRITEDATA_EVENT);
 }
 
@@ -1229,8 +1227,8 @@ static void modeChoose(void)
 		LogPrintf(DEBUG_ALL, "modeChoose==>Ble disable");
 		bleChangeFsm(BLE_IDLE);
         changeModeFsm(MODE_START);
-        sysparam.startUpCnt++;
-        paramSaveAll();
+        dynamicParam.startUpCnt++;
+        dynamicParamSaveAll();
         return;
 	}
     if (sysinfo.first == 0)
@@ -1239,8 +1237,8 @@ static void modeChoose(void)
         sysinfo.first = 1;
         bleChangeFsm(BLE_IDLE);
         changeModeFsm(MODE_START);
-        sysparam.startUpCnt++;
-        paramSaveAll();
+        dynamicParam.startUpCnt++;
+        dynamicParamSaveAll();
         return;
     }
     if (flag == 0)
@@ -1251,9 +1249,9 @@ static void modeChoose(void)
     switch (bleTry.runFsm)
     {
         case BLE_IDLE:
-            sysparam.startUpCnt++;
-            sysparam.bleLinkCnt++;
-            paramSaveAll();
+            dynamicParam.startUpCnt++;
+            dynamicParam.bleLinkCnt++;
+            dynamicParamSaveAll();
             //wakeUpByInt(2, 30);
             ledStatusUpdate(SYSTEM_LED_BLE, 1);
    
@@ -1274,19 +1272,19 @@ static void modeChoose(void)
             {
                 bleTry.scanCnt = 0;
                 //É¨ÃèÊ§°Ü
-                if (sysparam.bleLinkCnt >= sysparam.bleLinkFailCnt)
+                if (dynamicParam.bleLinkCnt >= sysparam.bleLinkFailCnt)
                 {
-                    LogPrintf(DEBUG_ALL, "scan fail==>%d", sysparam.bleLinkCnt);
+                    LogPrintf(DEBUG_ALL, "scan fail==>%d", dynamicParam.bleLinkCnt);
                     alarmRequestSet(ALARM_BLEALARM_REQUEST);
-                    sysparam.bleLinkCnt = 0;
-                    paramSaveAll();
+                    dynamicParam.bleLinkCnt = 0;
+                    dynamicParamSaveAll();
                     changeModeFsm(MODE_START);
                     bleChangeFsm(BLE_IDLE);
                     flag = 0;
                 }
                 else
                 {
-                    LogPrintf(DEBUG_ALL, "scan cnt==>%d", sysparam.bleLinkCnt);
+                    LogPrintf(DEBUG_ALL, "scan cnt==>%d", dynamicParam.bleLinkCnt);
                     bleChangeFsm(BLE_DONE);
                 }
             }
@@ -1308,12 +1306,12 @@ static void modeChoose(void)
             else
             {
                 bleTry.connCnt = 0;
-                if (sysparam.bleLinkCnt >= sysparam.bleLinkFailCnt)
+                if (dynamicParam.bleLinkCnt >= sysparam.bleLinkFailCnt)
                 {
-                    LogPrintf(DEBUG_ALL, "conn fail==>%d", sysparam.bleLinkCnt);
-                    sysparam.bleLinkCnt = 0;
+                    LogPrintf(DEBUG_ALL, "conn fail==>%d", dynamicParam.bleLinkCnt);
+                    dynamicParam.bleLinkCnt = 0;
                     alarmRequestSet(ALARM_BLEALARM_REQUEST);
-                    paramSaveAll();
+                    dynamicParamSaveAll();
                     changeModeFsm(MODE_START);
                     bleChangeFsm(BLE_IDLE);
                     flag = 0;
@@ -1415,8 +1413,8 @@ static void sysRunTimeCnt(void)
     if (++runTick >= 180)
     {
         runTick = 0;
-        sysparam.runTime++;
-        paramSaveAll();
+        dynamicParam.runTime++;
+        dynamicParamSaveAll();
     }
 }
 
@@ -1566,13 +1564,11 @@ static void sysAutoReq(void)
         {
             sysinfo.sysMinutes++;
             LogPrintf(DEBUG_ALL, "sysAutoReq==>sysMinutes:%d", sysinfo.sysMinutes);
-            portUartCfg(APPUSART2, 0, 115200, doDebugRecvPoll);
             if ((sysinfo.sysMinutes - sysparam.gapMinutes) == 0)
             {
             	sysinfo.sysMinutes = 0;
                 //gpsRequestSet(GPS_REQUEST_UPLOAD_ONE);
                 LogMessage(DEBUG_ALL, "upload period");
-                portUartCfg(APPUSART2, 0, 115200, doDebugRecvPoll);
                 if (sysinfo.kernalRun == 0)
                 {
                 	changeModeFsm(MODE_CHOOSE);
@@ -1660,7 +1656,7 @@ uint8_t SysBatDetection(void)
 			{
 				portGsensorCtl(1);
 			}
-			gpsRequestSet(GPS_REQUEST_UPLOAD_ONE);
+			//gpsRequestSet(GPS_REQUEST_UPLOAD_ONE);
 		}
 	}
 	return 1;
@@ -1979,7 +1975,6 @@ void myTaskPreInit(void)
     createSystemTask(ledTask, 1);
     createSystemTask(outputNode, 2);
     sysinfo.sysTaskId = createSystemTask(taskRunInSecond, 10);
-
 }
 
 /**************************************************
@@ -2046,8 +2041,10 @@ static tmosEvents myTaskEventProcess(tmosTaskID taskID, tmosEvents events)
     {
     	portUartCfg(APPUSART2, 1, 115200, doDebugRecvPoll);
         LogMessage(DEBUG_ALL, "Task one minutes");
-        
         sysAutoReq();
+        if (sysinfo.kernalRun == 0){
+        	portUartCfg(APPUSART2, 0, 115200, doDebugRecvPoll);
+        }
         return events ^ APP_TASK_ONEMINUTE_EVENT;
     }
     return 0;

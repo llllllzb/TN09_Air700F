@@ -76,6 +76,7 @@ const atCmd_s cmdtable[] =
     {CIPSHUT_CMD, "AT+CIPSHUT"},
     {CFGRI_CMD, "AT+CFGRI"},
     {WIFISCAN_CMD, "AT+WIFISCAN"},
+    {CSTT_CMD, "AT+CSTT"},
     {CFG_CMD, "AT+CFG"},
 };
 
@@ -91,7 +92,6 @@ uint8_t createNode(char *data, uint16_t datalen, uint8_t currentcmd)
     cmdNode_s *nextnode;
     cmdNode_s *currentnode;
     //如果链表头未创建，则创建链表头。
-    WAKEMODULE;
     if (currentcmd == WIFISCAN_CMD)
     {
 		wakeUpByInt(1, 20);
@@ -172,16 +172,22 @@ uint8_t createNode(char *data, uint16_t datalen, uint8_t currentcmd)
 @param
 @return
 @note
+	时基是200ms,无指令10s后进入睡眠
 **************************************************/
 
 void outputNode(void)
 {
     static uint8_t lockFlag = 0;
     static uint8_t lockTick = 0;
-    static uint8_t sleepTick = 0;
+    static uint8_t sleepTick = 50;
     static uint8_t tickRange = 50;
     cmdNode_s *nextnode;
     cmdNode_s *currentnode;
+    if (moduleState.powerState == 0)
+    {
+		return;
+    }
+
     if (lockFlag)
     {
         if (lockTick++ >= tickRange)
@@ -200,11 +206,22 @@ void outputNode(void)
         }
         else
         {
-            SLEEPMODULE;
+        	if (sysinfo.moduleSleep == 0 && sysinfo.lbsExtendEvt == 0 && sysinfo.wifiExtendEvt == 0)
+        	{
+            	SLEEPMODULE;
+            }
         }
         return ;
     }
-    sleepTick = 2;
+    else
+    {
+		if (sysinfo.moduleSleep)
+		{
+			WAKEMODULE;
+			return;
+		}
+    }
+    sleepTick = 50;
     currentnode = headNode;
     if (currentnode != NULL)
     {
@@ -505,7 +522,6 @@ void closeSocket(uint8_t link)
 
 static void netSetCgdcong(char *apn)
 {
-
     char param[100];
     sprintf(param, "1,\"IP\",\"%s\"", apn);
     sendModuleCmd(CGDCONT_CMD, param);
@@ -522,7 +538,7 @@ static void netSetApn(char *apn, char *apnname, char *apnpassword)
 {
     char param[100];
     sprintf(param, "1,1,\"%s\",\"%s\",\"%s\"", apn, apnname, apnpassword);
-    sendModuleCmd(QICSGP_CMD, param);
+    sendModuleCmd(CSTT_CMD, param);
 }
 
 
@@ -596,6 +612,15 @@ static void queryRecvBuffer(void)
         qirdCmdSend(HIDDEN_LINK);
     }
 }
+
+
+/**************************************************
+@bref		模组睡眠任务
+@param
+@return
+@note
+**************************************************/
+
 
 /**************************************************
 @bref		联网准备任务
@@ -1115,7 +1140,6 @@ static void qiurcParser(uint8_t *buf, uint16_t len)
             rebuf += 8;
             relen -= 8;
             LogMessage(DEBUG_ALL, "Socket all closed");
-            moduleSleepCtl(0);
             socketResetConnState();
             changeProcess(AT_STATUS);
         }
@@ -1277,7 +1301,6 @@ static void qisendParser(uint8_t *buf, uint16_t len)
     {
         //不能很好区分到底是哪条链路出现错误
         socketResetConnState();
-        moduleSleepCtl(0);
         changeProcess(CGREG_STATUS);
         return ;
     }
@@ -1429,14 +1452,14 @@ static void cgsnParser(uint8_t *buf, uint16_t len)
         }
         moduleState.IMEI[index] = 0;
         LogPrintf(DEBUG_ALL, "module IMEI [%s]", moduleState.IMEI);
-        if (tmos_memcmp(moduleState.IMEI, sysparam.SN, 15) == FALSE)
+        if (tmos_memcmp(moduleState.IMEI, dynamicParam.SN, 15) == FALSE)
         {
-            tmos_memset(sysparam.SN, 0, sizeof(sysparam.SN));
-            strncpy(sysparam.SN, moduleState.IMEI, 15);
-            jt808CreateSn(sysparam.jt808sn, sysparam.SN + 3, 12);
-            sysparam.jt808isRegister = 0;
-            sysparam.jt808AuthLen = 0;
-            paramSaveAll();
+            tmos_memset(dynamicParam.SN, 0, sizeof(dynamicParam.SN));
+            strncpy(dynamicParam.SN, moduleState.IMEI, 15);
+            jt808CreateSn(dynamicParam.jt808sn, dynamicParam.SN + 3, 12);
+            dynamicParam.jt808isRegister = 0;
+            dynamicParam.jt808AuthLen = 0;
+            dynamicParamSaveAll();
         }
     }
 
@@ -2150,6 +2173,33 @@ void cipstatusParser(uint8_t *buf, uint16_t len)
 
 }
 
+
+/**************************************************
+@bref		睡眠指令解析
+@param
+@return
+@note
+**************************************************/
+static void csclkParser(uint8_t *buf, uint16_t len)
+{
+	if (moduleState.cmd == WAKEUP_CMD)
+	{
+		if (distinguishOK((char *)buf))
+	    {
+	        sysinfo.moduleSleep = 0;
+	    }
+	}
+	else if (moduleState.cmd == SLEEP_CMD)
+	{
+		if (distinguishOK((char *)buf))
+	    {
+	        sysinfo.moduleSleep = 1;
+	    }
+	}
+
+}
+
+
 /**************************************************
 @bref		模组端数据接收解析器
 @param
@@ -2184,6 +2234,7 @@ void moduleRecvParser(uint8_t *buf, uint16_t bufsize)
     LogMessage(DEBUG_ALL, "---<<<---");
     /*****************************************/
     moduleRspSuccess();
+    csclkParser(dataRestore, len);
     cmtiParser(dataRestore, len);
     cmgrParser(dataRestore, len);
     nmeaParser(dataRestore, len);
@@ -2302,7 +2353,19 @@ int socketSendData(uint8_t link, uint8_t *data, uint16_t len)
 **************************************************/
 void moduleSleepCtl(uint8_t onoff)
 {
-
+    char param[20] = {0};
+    if (onoff == 0)
+    {
+    	moduleState.cmd = WAKEUP_CMD;
+    }
+    else
+    {
+		moduleState.cmd = SLEEP_CMD;
+    }
+    wakeUpByInt(1, 5);
+    sprintf(param, "AT+CSCLK=%d\r\n", onoff);
+    portUartSend(&usart3_ctl, param, strlen(param));
+    LogPrintf(DEBUG_ALL, param);
 }
 
 /**************************************************

@@ -1,0 +1,3 @@
+---- IPRXGET Matches (3 in 2 files) ----
+app_net.c (TN09_Air700F_boot\src) line 42 :      {CIPRXGET_CMD, "AT+CIPRXGET"},
+app_net.h (TN09_Air700F_boot\src\inc) line 47 :     CIPRXGET_CMD,

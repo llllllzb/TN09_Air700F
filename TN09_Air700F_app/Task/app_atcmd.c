@@ -133,7 +133,14 @@ static void doAtdebugCmd(uint8_t *buf, uint16_t len)
     {
         portSleepEn();
     }
-	
+    else if (mycmdPatch((uint8_t *)item.item_data[0], (uint8_t *)"MSLEEP"))
+    {
+		moduleSleepCtl(1);
+    }
+	else if (mycmdPatch((uint8_t *)item.item_data[0], (uint8_t *)"MWAKEUP"))
+    {
+		moduleSleepCtl(0);
+    }
     else
     {
         if (item.item_data[0][0] >= '0' && item.item_data[0][0] <= '9')
@@ -221,7 +228,7 @@ static void atCmdZTSNParser(uint8_t *buf, uint16_t len)
 void atCmdIMEIParser(void)
 {
     char imei[20];
-    LogPrintf(DEBUG_FACTORY, "ZTINFO:%s:%s:%s", sysparam.SN, getModuleIMEI(), EEPROM_VERSION);
+    LogPrintf(DEBUG_FACTORY, "ZTINFO:%s:%s:%s", dynamicParam.SN, getModuleIMEI(), EEPROM_VERSION);
 }
 
 //unsigned char nmeaCrc(char *str, int len)
@@ -344,7 +351,7 @@ static void atCmdFmpcIMSIParser(void)
     sendModuleCmd(CIMI_CMD, NULL);
     sendModuleCmd(CCID_CMD, NULL);
     sendModuleCmd(CGSN_CMD, NULL);
-    LogPrintf(DEBUG_FACTORY, "FMPC_IMSI_RSP OK, IMSI=%s&&%s&&%s", sysparam.SN, getModuleIMSI(), getModuleICCID());
+    LogPrintf(DEBUG_FACTORY, "FMPC_IMSI_RSP OK, IMSI=%s&&%s&&%s", dynamicParam.SN, getModuleIMSI(), getModuleICCID());
 }
 
 /**************************************************
@@ -358,7 +365,7 @@ static void atCmdFmpcIMSIParser(void)
 
 static void atCmdFmpcChkpParser(void)
 {
-    LogPrintf(DEBUG_FACTORY, "+FMPC_CHKP:%s,%s:%d", sysparam.SN, sysparam.Server, sysparam.ServerPort);
+    LogPrintf(DEBUG_FACTORY, "+FMPC_CHKP:%s,%s:%d", dynamicParam.SN, sysparam.Server, sysparam.ServerPort);
 }
 
 /**************************************************
@@ -541,6 +548,7 @@ void atCmdParserFunction(uint8_t *buf, uint16_t len)
     }
     else
     {
-        createNode(buf, len, 0);
+        //createNode(buf, len, 0);
+        portUartSend(&usart3_ctl, buf, len);
     }
 }

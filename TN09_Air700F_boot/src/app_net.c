@@ -486,7 +486,8 @@ void netConnectTask(void)
             {
                 moduleState.cpinResponOk = 0;
                 sendModuleCmd(AT_CMD, NULL);
-
+                netSetCgdcong((char *)sysparam.apn);
+				netSetApn((char *)sysparam.apn, (char *)sysparam.apnuser, (char *)sysparam.apnpassword);
                 changeProcess(CSQ_STATUS);
 
             }
@@ -509,6 +510,7 @@ void netConnectTask(void)
                 moduleCtrl.csqCount = 0;
                 sendModuleCmd(CGREG_CMD, "2");
                 sendModuleCmd(CEREG_CMD, "2");
+                sendModuleCmd(CIPSHUT_CMD, NULL);
                 changeProcess(CGREG_STATUS);
                 netResetCsqSearch();
             }
@@ -562,6 +564,7 @@ void netConnectTask(void)
             }
         case CONFIG_STATUS:
             sendModuleCmd(CIPMUX_CMD, "1");
+            netSetCgdcong((char *)sysparam.apn);
             netSetApn((char *)sysparam.apn, (char *)sysparam.apnuser, (char *)sysparam.apnpassword);
             changeProcess(QIACT_STATUS);
 
