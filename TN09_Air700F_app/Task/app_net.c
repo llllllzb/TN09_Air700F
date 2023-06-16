@@ -94,7 +94,7 @@ uint8_t createNode(char *data, uint16_t datalen, uint8_t currentcmd)
     //如果链表头未创建，则创建链表头。
     if (currentcmd == WIFISCAN_CMD)
     {
-		wakeUpByInt(1, 20);
+		wakeUpByInt(1, 30);
     }
     else
     {

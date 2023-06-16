@@ -1432,8 +1432,8 @@ static void modeRun(void)
     {
         case MODE1:
         case MODE3:
-            //该模式下工作3分半钟
-            if ((sysinfo.sysTick - sysinfo.runStartTick) >= 150)
+            //该模式下工作1分半钟
+            if ((sysinfo.sysTick - sysinfo.runStartTick) >= 90)
             {
                 gpsRequestClear(GPS_REQUEST_ALL);
                 alarmRequestClear(ALARM_ALL_REQUEST);
@@ -1476,6 +1476,7 @@ static void modeStop(void)
     ledStatusUpdate(SYSTEM_LED_RUN, 0);
     modulePowerOff();
     changeModeFsm(MODE_DONE);
+    wakeUpByInt(1, 0);
 }
 
 /**************************************************
@@ -1569,11 +1570,20 @@ static void sysAutoReq(void)
             	sysinfo.sysMinutes = 0;
                 //gpsRequestSet(GPS_REQUEST_UPLOAD_ONE);
                 LogMessage(DEBUG_ALL, "upload period");
-                if (sysinfo.kernalRun == 0)
+
+                if (sysparam.MODE == MODE2)
                 {
-                	changeModeFsm(MODE_CHOOSE);
-                	volCheckRequest();
-                    tmos_set_event(sysinfo.taskId, APP_TASK_RUN_EVENT);
+                    lbsRequestSet(DEV_EXTEND_OF_MY);
+                    wifiRequestSet(DEV_EXTEND_OF_MY);
+                }
+                else
+                {
+                     if (sysinfo.kernalRun == 0)
+                     {
+                         changeModeFsm(MODE_CHOOSE);
+                         volCheckRequest();
+                         tmos_set_event(sysinfo.taskId, APP_TASK_RUN_EVENT);
+                     }
                 }
             }
         }
@@ -1958,7 +1968,7 @@ void doDebugRecvPoll(uint8_t *msg, uint16_t len)
 void myTaskPreInit(void)
 {
     tmos_memset(&sysinfo, 0, sizeof(sysinfo));
-    sysinfo.logLevel = 9;
+    //sysinfo.logLevel = 9;
     SetSysClock(CLK_SOURCE_PLL_60MHz);
     portGpioSetDefCfg();
     portUartCfg(APPUSART2, 1, 115200, doDebugRecvPoll);
