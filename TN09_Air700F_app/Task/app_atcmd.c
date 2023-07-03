@@ -162,7 +162,7 @@ static void atCmdFmpcAdccalParser(void)
     float x;
     x = portGetAdcVol(ADC_CHANNEL);
     LogPrintf(DEBUG_ALL, "vCar:%.2f", x);
-    sysparam.adccal = 4.0 / x;
+    sysparam.adccal = 3.0 / x;
     paramSaveAll();
     LogPrintf(DEBUG_FACTORY, "Update the ADC calibration parameter to %f", sysparam.adccal);
 }

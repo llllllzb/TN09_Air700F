@@ -1006,10 +1006,10 @@ static void voltageCheckTask(void)
 		return;
     }
     x = portGetAdcVol(ADC_CHANNEL);
-    sysinfo.outsidevoltage = x ;
+    sysinfo.outsidevoltage = x * sysparam.adccal;
     sysinfo.insidevoltage = sysinfo.outsidevoltage;
 	//LogPrintf(DEBUG_ALL, "x:%.2f, outvol:%.2f", x, sysinfo.outsidevoltage);
-	if (sysinfo.outsidevoltage < 2.5 && sysinfo.canRunFlag == 1)
+	if (sysinfo.outsidevoltage < 2.6 && sysinfo.canRunFlag == 1)
 	{
 		if (runTick++ >= 5)
 		{
@@ -1018,7 +1018,7 @@ static void voltageCheckTask(void)
 			LogPrintf(DEBUG_ALL, "Batvoltage is lowwer than %.2f", sysinfo.outsidevoltage);
 		}
 	}
-	else if (sysinfo.outsidevoltage >= 2.7 && sysinfo.canRunFlag == 0)
+	else if (sysinfo.outsidevoltage >= 2.8 && sysinfo.canRunFlag == 0)
 	{
 		if (runTick++ >= 5)
 		{
