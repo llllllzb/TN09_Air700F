@@ -289,8 +289,8 @@ static void ledTask(void)
 **************************************************/
 void gpsRequestSet(uint32_t flag)
 {
-    LogPrintf(DEBUG_ALL, "gpsRequestSet==>0x%04X", flag);
-    sysinfo.gpsRequest |= flag;
+//    LogPrintf(DEBUG_ALL, "gpsRequestSet==>0x%04X", flag);
+//    sysinfo.gpsRequest |= flag;
 }
 
 /**************************************************
@@ -1378,6 +1378,7 @@ static void modeStart(void)
             break;
         case MODE2:
             portGsensorCtl(1);
+            sysinfo.mode2runTick = sysinfo.sysTick;
             if (sysparam.accctlgnss == 0)
             {
                 gpsRequestSet(GPS_REQUEST_GPSKEEPOPEN_CTL);
@@ -1418,6 +1419,11 @@ static void sysRunTimeCnt(void)
     }
 }
 
+static void mode2ShutdownQuickly(void)
+{
+	
+
+}
 /**************************************************
 @bref		模式运行
 @param
@@ -1444,7 +1450,12 @@ static void modeRun(void)
         case MODE2:
             //该模式下每隔3分钟记录时长
             sysRunTimeCnt();
-            gpsUploadPointToServer();
+            //超过180s不联网，关机一小时
+            if (sysinfo.sysTick - sysinfo.mode2runTick >= 180)
+            {
+				modeTryToStop();
+            }
+            //gpsUploadPointToServer();
             break;
         case MODE21:
         case MODE23:
@@ -1488,7 +1499,7 @@ static void modeStop(void)
 
 static void modeDone(void)
 {
-	if (sysparam.MODE == MODE1 || sysparam.MODE == MODE3)
+	if (sysparam.MODE == MODE1 || sysparam.MODE == MODE3 || sysparam.MODE == MODE2)
     {
     	//第一个条件是保证执行完睡眠之前的IO配置
     	//第二个条件是保证模组关机
@@ -1543,6 +1554,7 @@ static void sysAutoReq(void)
 {
     uint16_t year;
     uint8_t month, date, hour, minute, second;
+    static uint16_t sleepTick = 0;
 
     if (sysparam.MODE == MODE1 || sysparam.MODE == MODE21)
     {
@@ -1559,7 +1571,7 @@ static void sysAutoReq(void)
             }
         }
     }
-    else
+    else if (sysparam.MODE == MODE3 || sysparam.MODE == MODE23)
     {
         if (sysparam.gapMinutes != 0)
         {
@@ -1570,22 +1582,41 @@ static void sysAutoReq(void)
             	sysinfo.sysMinutes = 0;
                 //gpsRequestSet(GPS_REQUEST_UPLOAD_ONE);
                 LogMessage(DEBUG_ALL, "upload period");
-
-                if (sysparam.MODE == MODE2)
-                {
-                    lbsRequestSet(DEV_EXTEND_OF_MY);
-                    wifiRequestSet(DEV_EXTEND_OF_MY);
-                }
-                else
-                {
-                     if (sysinfo.kernalRun == 0)
-                     {
-                         changeModeFsm(MODE_CHOOSE);
-                         volCheckRequest();
-                         tmos_set_event(sysinfo.taskId, APP_TASK_RUN_EVENT);
-                     }
-                }
+	            if (sysinfo.kernalRun == 0)
+	            {
+	                changeModeFsm(MODE_CHOOSE);
+	                volCheckRequest();
+	                tmos_set_event(sysinfo.taskId, APP_TASK_RUN_EVENT);
+	            }
             }
+        }
+    }
+    else if (sysparam.MODE == MODE2)
+    {
+    	if (sysinfo.kernalRun == 0)
+    	{
+			sleepTick++;
+			if (sleepTick >= 60)
+			{
+				changeModeFsm(MODE_CHOOSE);
+	            volCheckRequest();
+	            tmos_set_event(sysinfo.taskId, APP_TASK_RUN_EVENT);
+			}
+    	}
+    	else
+    	{
+			sleepTick = 0;
+			if (sysparam.gapMinutes != 0)
+	        {
+	        	sysinfo.sysMinutes++;
+	        	LogPrintf(DEBUG_ALL, "sysAutoReq==>sysMinutes:%d", sysinfo.sysMinutes);
+	        	if ((sysinfo.sysMinutes - sysparam.gapMinutes) == 0)
+	        	{
+	        		sysinfo.sysMinutes = 0;
+		            lbsRequestSet(DEV_EXTEND_OF_MY);
+		            wifiRequestSet(DEV_EXTEND_OF_MY);
+	            }
+	        }
         }
     }
 }
@@ -1798,7 +1829,7 @@ static void wifiRequestTask(void)
 @return
 @note
 **************************************************/
-void wakeUpByInt(uint8_t     type, uint8_t sec)
+void wakeUpByInt(uint8_t      type, uint8_t sec)
 {
     switch (type)
     {

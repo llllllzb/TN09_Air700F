@@ -89,6 +89,7 @@ typedef struct
     uint32_t sysTick;    /*系统节拍*/
     uint32_t runStartTick;  /*开机节拍*/
     uint32_t gpsUpdatetick;
+    uint32_t mode2runTick;
 
     float outsidevoltage;
     float insidevoltage;

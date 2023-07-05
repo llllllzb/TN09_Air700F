@@ -186,6 +186,7 @@ typedef struct
     uint8_t cgregCount;
     uint8_t qipactCount;
     uint16_t csqTime;
+    uint8_t cpinCount;
 } moduleCtrl_s;
 
 

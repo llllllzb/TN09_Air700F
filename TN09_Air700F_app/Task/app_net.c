@@ -674,6 +674,7 @@ void netConnectTask(void)
             {
                 moduleState.cpinResponOk = 0;
                 moduleState.csqOk = 0;
+                moduleCtrl.cpinCount = 0;
                 sendModuleCmd(AT_CMD, NULL);
                 netSetCgdcong((char *)sysparam.apn);
                 netSetApn((char *)sysparam.apn, (char *)sysparam.apnuser, (char *)sysparam.apnpassword);
@@ -689,6 +690,13 @@ void netConnectTask(void)
                 if (moduleState.fsmtick >= 30)
                 {
                     moduleReset();
+                    moduleCtrl.cpinCount++;
+                    //6次搜不到卡，关机
+                    if (moduleCtrl.cpinCount >= 6)
+                    {
+						modeTryToStop();
+						moduleCtrl.cpinCount = 0;
+                    }
                 }
                 break;
             }
@@ -709,7 +717,7 @@ void netConnectTask(void)
                 sendModuleCmd(CSQ_CMD, NULL);
                 if (moduleCtrl.csqTime == 0)
                 {
-                    moduleCtrl.csqTime = 90;
+                    moduleCtrl.csqTime = 60;
                 }
                 if (moduleState.fsmtick >= moduleCtrl.csqTime)
                 {
@@ -717,15 +725,8 @@ void netConnectTask(void)
                     if (moduleCtrl.csqCount >= 3)
                     {
                         moduleCtrl.csqCount = 0;
-                        //3次搜索不到网络时，如果没有gps请求，则关机
-                        if (sysinfo.gpsRequest != 0)
-                        {
-                            moduleReset();
-                        }
-                        else
-                        {
-                            modeTryToStop();
-                        }
+                        //3次搜索不到网络时，关机
+                        modeTryToStop();
                     }
                     else
                     {
@@ -753,16 +754,8 @@ void netConnectTask(void)
                     if (moduleCtrl.cgregCount >= 2)
                     {
                         moduleCtrl.cgregCount = 0;
-                        //2次注册不上基站时，如果没有gps请求，则关机
-                        if (sysinfo.gpsRequest == 0)
-                        {
-                            modeTryToStop();
-                        }
-                        else
-                        {
-                            moduleReset();
-                        }
-
+                        //2次注册不上基站时，关机
+                        modeTryToStop();
                         LogMessage(DEBUG_ALL, "Register timeout,try to skip");
                     }
                     else
@@ -1386,7 +1379,7 @@ OK
 static void wifiscanParser(uint8_t *buf, uint16_t len)
 {
     int index;
-    uint8_t *rebuf, i;
+    uint8_t *rebuf, i, flag = 0;
     int16_t relen;
     char restore[20];
     WIFIINFO wifiList;
@@ -1398,7 +1391,7 @@ static void wifiscanParser(uint8_t *buf, uint16_t len)
     {
         rebuf += index + 12;
         relen -= index + 12;
-
+		flag = 1;
         index = getCharIndex(rebuf, relen, '"');
         if (index == 17 && wifiList.apcount < WIFIINFOMAX)
         {
@@ -1419,16 +1412,19 @@ static void wifiscanParser(uint8_t *buf, uint16_t len)
 
         index = my_getstrindex((char *)rebuf, "+WIFISCAN:", relen);
     }
-    if (wifiList.apcount != 0)
+    if (flag != 0)
     {
-        if (sysinfo.wifiExtendEvt & DEV_EXTEND_OF_MY)
-        {
-            protocolSend(NORMAL_LINK, PROTOCOL_F3, &wifiList);
-        }
-        if (sysinfo.wifiExtendEvt & DEV_EXTEND_OF_BLE)
-        {
-            protocolSend(BLE_LINK, PROTOCOL_F3, &wifiList);
-        }
+	    if (wifiList.apcount != 0)
+	    {
+	        if (sysinfo.wifiExtendEvt & DEV_EXTEND_OF_MY)
+	        {
+	            protocolSend(NORMAL_LINK, PROTOCOL_F3, &wifiList);
+	        }
+	        if (sysinfo.wifiExtendEvt & DEV_EXTEND_OF_BLE)
+	        {
+	            protocolSend(BLE_LINK, PROTOCOL_F3, &wifiList);
+	        }
+	    }
         sysinfo.wifiExtendEvt = 0;
     }
 }
@@ -2173,6 +2169,26 @@ void cipstatusParser(uint8_t *buf, uint16_t len)
 
 }
 
+/**************************************************
+@bref		CLOSE	指令解析
+@param
+@return
+@note
+	0, CLOSE OK
+**************************************************/
+
+void qicloseParser(uint8_t *buf, uint16_t len)
+{
+    int index;
+    if (my_strstr(buf, "0, CLOSE OK", len))
+    {
+        socketSetConnState(NORMAL_LINK, SOCKET_CONN_ERR);
+    }
+    else if (my_strstr(buf, "4, CLOSE OK", len))
+    {
+        socketSetConnState(AGPS_LINK, SOCKET_CONN_ERR);
+    }
+}
 
 /**************************************************
 @bref		睡眠指令解析
@@ -2240,6 +2256,7 @@ void moduleRecvParser(uint8_t *buf, uint16_t bufsize)
     nmeaParser(dataRestore, len);
     cipstartRspParser(dataRestore, len);
     wifiscanParser(dataRestore, len);
+    qicloseParser(dataRestore, len);
     if (ciprxgetParser(dataRestore, len))
     {
         if (moduleState.cmd == CIPRXGET_CMD)

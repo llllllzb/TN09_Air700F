@@ -74,11 +74,13 @@ static void hbtRspTimeOut(void)
     hbtTimeOutId = -1;
     if (sysparam.protocol == ZT_PROTOCOL_TYPE)
     {
-        socketDel(NORMAL_LINK);
+    	modeTryToStop();
+        //socketDel(NORMAL_LINK);
     }
     else
     {
-        socketDel(JT808_LINK);
+    	modeTryToStop();
+        //socketDel(JT808_LINK);
     }
 }
 
@@ -220,6 +222,7 @@ static void privateServerSocketRecv(char *data, uint16_t len)
 void privateServerConnTask(void)
 {
     static uint16_t unLoginTick = 0;
+    static uint16_t unackCnt = 0;
     if (gpsInWait())
     {
         return;
@@ -264,6 +267,7 @@ void privateServerConnTask(void)
             protocolSend(NORMAL_LINK, PROTOCOL_8A, NULL);
             privateServerChangeFsm(SERV_LOGIN_WAIT);
             privateServConn.logintick = 0;
+            unackCnt = 0;
             break;
         case SERV_LOGIN_WAIT:
             privateServConn.logintick++;
@@ -275,11 +279,12 @@ void privateServerConnTask(void)
                 if (privateServConn.loginCount >= 3)
                 {
                     privateServConn.loginCount = 0;
-                    moduleReset();
+                    modeTryToStop();
                 }
             }
             break;
         case SERV_READY:
+        	sysinfo.mode2runTick = sysinfo.sysTick;
             if (privateServConn.heartbeattick % (sysparam.heartbeatgap - 2) == 0)
             {
                 queryBatVoltage();
@@ -290,7 +295,7 @@ void privateServerConnTask(void)
                 privateServConn.heartbeattick = 0;
                 if (timeOutId == -1)
                 {
-                    timeOutId = startTimer(120, moduleRspTimeout, 0);
+                    timeOutId = startTimer(240, moduleRspTimeout, 0);
                 }
                 if (hbtTimeOutId == -1)
                 {
@@ -305,6 +310,15 @@ void privateServerConnTask(void)
             if (getTcpNack())
             {
                 querySendData(NORMAL_LINK);
+                if (unackCnt++ >= 30)
+                {
+					privateServerReconnect();
+					unackCnt = 0;
+                }
+            }
+            else
+            {
+				unackCnt = 0;
             }
             if (privateServConn.heartbeattick % 2 == 0)
             {
