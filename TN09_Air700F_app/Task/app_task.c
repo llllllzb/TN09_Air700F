@@ -1755,7 +1755,9 @@ static void sendLbs(void)
 {
     if (sysinfo.lbsExtendEvt & DEV_EXTEND_OF_MY)
     {
+    	sysinfo.jt808Lbs = 1;
         protocolSend(NORMAL_LINK, PROTOCOL_19, NULL);
+        jt808SendToServer(TERMINAL_POSITION, getCurrentGPSInfo());
     }
     if (sysinfo.lbsExtendEvt & DEV_EXTEND_OF_BLE)
     {
@@ -1779,11 +1781,8 @@ static void lbsRequestTask(void)
     if (primaryServerIsReady() == 0)
         return;
     sysinfo.lbsRequest = 0;
-    if (sysparam.protocol == ZT_PROTOCOL_TYPE)
-    {
-        moduleGetLbs();
-        startTimer(70, sendLbs, 0);
-    }
+    moduleGetLbs();
+    startTimer(70, sendLbs, 0);    
 }
 
 /**************************************************
@@ -1815,12 +1814,8 @@ static void wifiRequestTask(void)
     }
     if (primaryServerIsReady() == 0)
         return;
-
     sysinfo.wifiRequest = 0;
-    if (sysparam.protocol == ZT_PROTOCOL_TYPE)
-    {
-        startTimer(80, moduleGetWifiScan, 0);
-    }
+    startTimer(80, moduleGetWifiScan, 0);
 }
 
 /**************************************************
@@ -1999,7 +1994,7 @@ void doDebugRecvPoll(uint8_t *msg, uint16_t len)
 void myTaskPreInit(void)
 {
     tmos_memset(&sysinfo, 0, sizeof(sysinfo));
-    //sysinfo.logLevel = 9;
+    sysinfo.logLevel = 9;
     SetSysClock(CLK_SOURCE_PLL_60MHz);
     portGpioSetDefCfg();
     portUartCfg(APPUSART2, 1, 115200, doDebugRecvPoll);

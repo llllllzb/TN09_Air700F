@@ -59,6 +59,8 @@ typedef struct
     uint8_t ledfirst				: 1;
     uint8_t volCheckReq				: 1;
     uint8_t moduleSleep				: 1;
+    uint8_t jt808Lbs				: 1;
+    uint8_t jt808Wifi				: 1;
     uint8_t canRunFlag;	/*1:表示电压合适，可以运行      2：表示电压过低，关机*/
     uint8_t lbsExtendEvt;
     uint8_t wifiExtendEvt;

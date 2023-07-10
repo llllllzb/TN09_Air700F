@@ -544,7 +544,8 @@ void doUPSInstruction(ITEM *item, char *message)
     strcpy(bootparam.apnpassword, sysparam.apnpassword);
     strcpy(bootparam.codeVersion, EEPROM_VERSION);
     bootParamSaveAll();
-    startTimer(40, portSysReset, 0);
+    startTimer(30, modulePowerOff, 0);
+    startTimer(60, portSysReset, 0);
 }
 
 void doLOWWInstruction(ITEM *item, char *message)
@@ -631,7 +632,8 @@ void doPOITYPEInstruction(ITEM *item, char *message)
 void doResetInstruction(ITEM *item, char *message)
 {
     sprintf(message, "System will reset after 5 seconds");
-    startTimer(50, portSysReset, 0);
+    startTimer(30, modulePowerOff, 0);
+    startTimer(60, portSysReset, 0);
 }
 
 void doUTCInstruction(ITEM *item, char *message)

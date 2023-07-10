@@ -1,1 +1,2 @@
----- CLOSE OK Matches (0 in 0 files) ----
+---- jt808UpdateWifi Matches (1 in 1 files) ----
+app_jt808.c (TN09_Air700F_app\Task) line 112 : void jt808UpdateWifi(WIFIINFO *wifiList)

@@ -289,7 +289,7 @@ static void modulePressReleaseOffKey(void)
 static void modulePressPowerOffKey(void)
 {
     PWRKEY_LOW;
-    startTimer(20, modulePressReleaseOffKey, 0);
+    startTimer(2000, modulePressReleaseOffKey, 0);
 }
 
 /**************************************************
@@ -307,7 +307,7 @@ void modulePowerOff(void)
     POWER_OFF;
     RSTKEY_HIGH;
     PWRKEY_HIGH;
-    startTimer(6, modulePressPowerOffKey, 0);
+    startTimer(600, modulePressPowerOffKey, 0);
 
     
 }
@@ -337,7 +337,7 @@ void moduleReset(void)
     moduleInit();
     POWER_OFF;
     RSTKEY_LOW;
-    startTimer(15, modulePowerOn, 0);
+    startTimer(1500, modulePowerOn, 0);
     socketDelAll();
 
 }

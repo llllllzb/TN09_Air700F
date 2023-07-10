@@ -102,6 +102,29 @@ void jt808UpdateAlarm(uint32_t bit, uint8_t onoff)
         jt808_position.alarm &= ~bit;
     }
 }
+/**************************************************
+@bref		更新jt808的wifi信息
+@param
+@return
+@note
+**************************************************/
+
+void jt808UpdateWifiinfo(WIFIINFO *wifiList)
+{
+	uint8_t i, j;
+	jt808_position.wifiList.apcount = wifiList->apcount;
+	sysinfo.jt808Wifi = 1;
+	for (i = 0; i < wifiList->apcount; i++)
+	{
+		for (j = 0; j < 6; j++)
+		{
+			jt808_position.wifiList.ap[i].ssid[j] = wifiList->ap[i].ssid[j];
+		}
+		jt808_position.wifiList.ap[i].signal = wifiList->ap[i].signal;
+//		LogPrintf(DEBUG_ALL, "wifiList.apcount:%d signal:%d", jt808_position.wifiList.apcount,jt808_position.wifiList.ap[i].signal);
+	}
+}
+
 
 /**************************************************
 @bref		注册TCP发送数据函数
@@ -359,7 +382,8 @@ static uint16_t jt808Escape(uint8_t *dest, uint16_t len)
     debugLen = msgLen > 150 ? 150 : msgLen;
     byteToHexString(dest, senddata, debugLen);
     senddata[debugLen * 2] = 0;
-    LogPrintf(DEBUG_ALL, "jt808Escape==> %s", senddata);
+    LogPrintf(DEBUG_ALL, "jt808Escape==>");
+    LogMessageWL(DEBUG_ALL, senddata, strlen(senddata));
     return msgLen;
 }
 
@@ -672,7 +696,7 @@ static uint16_t jt808PositionInfo(uint8_t *dest, uint16_t len, jt808Position_s *
 static uint16_t jt808TerminalPosition(uint8_t *dest, uint8_t *sn, jt808Position_s *positionInfo, uint8_t type)
 {
     uint16_t len;
-
+	uint8_t i, j;
     len = jt808PackMessageHead(dest, TERMINAL_POSITION_MSGID, sn, jt808GetSerial(), 0);
     len = jt808PositionInfo(dest, len, positionInfo);
     if (type == 1)
@@ -686,6 +710,37 @@ static uint16_t jt808TerminalPosition(uint8_t *dest, uint8_t *sn, jt808Position_
         dest[len++] = 0x31;
         dest[len++] = 0x01;
         dest[len++] = positionInfo->statelliteUsed;
+        //WIFI信息
+        if (sysinfo.jt808Wifi != 0)
+        {
+	        dest[len++] = 0x54;
+	        dest[len++] = positionInfo->wifiList.apcount * 7 + 1;
+	        for (i = 0; i < positionInfo->wifiList.apcount; i++)
+	        {
+				for (j = 0; j < 6; j++)
+				{
+					dest[len++] = positionInfo->wifiList.ap[i].ssid[j];
+				}
+				dest[len++] = positionInfo->wifiList.ap[i].signal;
+	        }
+	        sysinfo.jt808Wifi = 0;
+        }
+        //LBS信息
+        if (sysinfo.jt808Lbs != 0)
+        {
+			dest[len++] = 0xE1;
+			dest[len++] = 0x09;
+			dest[len++] = getMCC() >> 8;
+		    dest[len++] = getMCC();
+		    dest[len++] = getMNC();
+		    dest[len++] = getLac() >> 8;
+		    dest[len++] = getLac();
+		    dest[len++] = getCid() >> 24;
+		    dest[len++] = getCid() >> 16;
+		    dest[len++] = getCid() >> 8;
+		    dest[len++] = getCid();
+		    sysinfo.jt808Lbs = 0;
+        }
     }
 
     len = jt808PackMessageTail(dest, len);

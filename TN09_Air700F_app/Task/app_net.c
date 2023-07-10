@@ -772,6 +772,7 @@ void netConnectTask(void)
             sendModuleCmd(CIPQSEND_CMD, "1");
             sendModuleCmd(CIPRXGET_CMD, "5");
             sendModuleCmd(CFG_CMD, "\"urcdelay\",100");
+            sendModuleCmd(CIMI_CMD, NULL);
             changeProcess(QIACT_STATUS);
             break;
         case QIACT_STATUS:
@@ -1355,11 +1356,6 @@ static void qisendParser(uint8_t *buf, uint16_t len)
 @param
 @return
 @note
-+QWIFISCAN: (-,-,-74,"F4:6D:2F:7F:0E:A8",6)
-+QWIFISCAN: (-,-,-74,"08:6B:D1:0B:50:60",11)
-+QWIFISCAN: (-,-,-79,"4A:98:CA:B9:71:9C",1)
-+QWIFISCAN: (-,-,-79,"C4:AD:34:C7:0D:01",7)
-+QWIFISCAN: (-,-,-83,"70:3A:73:05:79:1C",13)
 
 +WIFISCAN: "50:0f:f5:51:1a:eb",-31,3
 +WIFISCAN: "dc:9f:db:1c:1d:76",-50,11
@@ -1381,6 +1377,7 @@ static void wifiscanParser(uint8_t *buf, uint16_t len)
     int index;
     uint8_t *rebuf, i, flag = 0;
     int16_t relen;
+    int16_t signal;
     char restore[20];
     WIFIINFO wifiList;
     rebuf = buf;
@@ -1404,12 +1401,20 @@ static void wifiscanParser(uint8_t *buf, uint16_t len)
             {
                 changeHexStringToByteArray(wifiList.ap[wifiList.apcount].ssid + i, restore + (3 * i), 1);
             }
+            rebuf += index + 3;
+	        relen -= index + 3;
+	        index = getCharIndex(rebuf, relen, ',');
+	        memcpy(restore, rebuf, index);
+	        restore[index] = 0;
+	        //wifiList.ap[wifiList.apcount].signal = atoi(restore);
+	        changeHexStringToByteArray(&wifiList.ap[wifiList.apcount].signal, restore, 1);
             wifiList.apcount++;
         }
+
         index = getCharIndex(rebuf, relen, '\n');
         rebuf += index;
         relen -= index;
-
+	
         index = my_getstrindex((char *)rebuf, "+WIFISCAN:", relen);
     }
     if (flag != 0)
@@ -1418,7 +1423,9 @@ static void wifiscanParser(uint8_t *buf, uint16_t len)
 	    {
 	        if (sysinfo.wifiExtendEvt & DEV_EXTEND_OF_MY)
 	        {
+	        	jt808UpdateWifiinfo(&wifiList);
 	            protocolSend(NORMAL_LINK, PROTOCOL_F3, &wifiList);
+	            jt808SendToServer(TERMINAL_POSITION, getCurrentGPSInfo());
 	        }
 	        if (sysinfo.wifiExtendEvt & DEV_EXTEND_OF_BLE)
 	        {

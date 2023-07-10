@@ -75,6 +75,7 @@ typedef struct
     uint8_t mintues;
     uint8_t seconds;
     uint8_t statelliteUsed;
+    WIFIINFO wifiList;		//wifi–≈œ¢
 } jt808Position_s;
 
 
@@ -117,6 +118,8 @@ void jt808InfoInit(void);
 void jt808CreateSn(uint8_t *jt808sn, uint8_t *imei, uint8_t snlen);
 void jt808UpdateStatus(uint32_t bit, uint8_t onoff);
 void jt808UpdateAlarm(uint32_t bit, uint8_t onoff);
+void jt808UpdateWifiinfo(WIFIINFO *wifiList);
+
 void jt808RegisterTcpSend(int (*tcpSend)(uint8_t, uint8_t *, uint16_t));
 void jt808RegisterLoginInfo(uint8_t *sn, uint8_t reg, uint8_t *authCode, uint8_t authLen);
 void jt808RegisterManufactureId(uint8_t *id);
