@@ -1056,7 +1056,7 @@ static void changeModeFsm(uint8_t fsm)
 static void modeShutDownQuickly(void)
 {
     static uint8_t delaytick = 0;
-    if (sysinfo.wifiExtendEvt == 0 && sysinfo.lbsExtendEvt == 0)
+    if (sysinfo.wifiExtendEvt == 0 && sysinfo.lbsExtendEvt == 0 && sysinfo.alarmRequest == 0)
     {
         delaytick++;
         if (delaytick >= 5)
@@ -1222,15 +1222,6 @@ static void modeChoose(void)
 //        paramSaveAll();
 //        return;
 //    }
-	if (sysparam.bleLinkFailCnt == 0)
-	{
-		LogPrintf(DEBUG_ALL, "modeChoose==>Ble disable");
-		bleChangeFsm(BLE_IDLE);
-        changeModeFsm(MODE_START);
-        dynamicParam.startUpCnt++;
-        dynamicParamSaveAll();
-        return;
-	}
     if (sysinfo.first == 0)
     {
     	LogPrintf(DEBUG_ALL, "modeChoose==>First start");
@@ -1241,6 +1232,17 @@ static void modeChoose(void)
         dynamicParamSaveAll();
         return;
     }
+
+	if (sysparam.bleLinkFailCnt == 0)
+	{
+		LogPrintf(DEBUG_ALL, "modeChoose==>Ble disable");
+		bleChangeFsm(BLE_IDLE);
+        changeModeFsm(MODE_START);
+        dynamicParam.startUpCnt++;
+        dynamicParamSaveAll();
+        return;
+	}
+
     if (flag == 0)
     {
     	flag = 1;
@@ -1994,7 +1996,7 @@ void doDebugRecvPoll(uint8_t *msg, uint16_t len)
 void myTaskPreInit(void)
 {
     tmos_memset(&sysinfo, 0, sizeof(sysinfo));
-    sysinfo.logLevel = 9;
+    //sysinfo.logLevel = 9;
     SetSysClock(CLK_SOURCE_PLL_60MHz);
     portGpioSetDefCfg();
     portUartCfg(APPUSART2, 1, 115200, doDebugRecvPoll);

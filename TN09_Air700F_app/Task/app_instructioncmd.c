@@ -761,7 +761,7 @@ void doFenceInstrucion(ITEM *item, char *message)
 
 void doIccidInstrucion(ITEM *item, char *message)
 {
-    sendModuleCmd(CCID_CMD, NULL);
+    sendModuleCmd(ICCID_CMD, NULL);
     sprintf(message, "ICCID:%s", getModuleICCID());
 }
 

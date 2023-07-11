@@ -1,2 +1,2 @@
----- jt808UpdateWifi Matches (1 in 1 files) ----
-app_jt808.c (TN09_Air700F_app\Task) line 112 : void jt808UpdateWifi(WIFIINFO *wifiList)
+---- &sysinfo Matches (1 in 1 files) ----
+myTaskPreInit in app_task.c (TN09_Air700F_app\Task) :     tmos_memset(&sysinfo, 0, sizeof(sysinfo));

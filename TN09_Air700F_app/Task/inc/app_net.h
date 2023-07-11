@@ -42,7 +42,6 @@ typedef enum
     QISEND_CMD,
     CIMI_CMD,
     CGSN_CMD,
-    CCID_CMD,
     ICCID_CMD,
     CMGF_CMD,
     CMGR_CMD,
@@ -90,6 +89,7 @@ typedef enum
     WIFISCAN_CMD,
     CFG_CMD,
     CIICR_CMD,
+    CIFSR_CMD,
     SLEEP_CMD,
     WAKEUP_CMD,
 } atCmdType_e;

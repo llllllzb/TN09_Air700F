@@ -387,6 +387,7 @@ static void protoclparaseF3(uint8_t *protocol, int size)
         {
             LogMessage(DEBUG_ALL, "No update file");
             paramSaveUpdateStatus(0);
+            modulePowerOff();
             startTimer(1000, startJumpToApp, 1);
         }
     }
@@ -708,6 +709,7 @@ void upgradeRunTask(void)
             LogMessage(DEBUG_ALL, "Download firmware complete!");
             upgradeFsmChange(NETWORK_WAIT_JUMP);
             paramSaveUpdateStatus(0);
+            modulePowerOff();
             startTimer(1000, startJumpToApp, 1);
             break;
         case NETWORK_DOWNLOAD_ERROR://下载错误，需要处理
@@ -742,7 +744,6 @@ void startJumpToApp(void)
     --tick;
     if (tick == 0)
     {
-        modulePowerOff();
         if (JumpToApp(APPLICATION_ADDRESS) == 0)
         {
             LogMessage(DEBUG_ALL, "Jump to app fail");

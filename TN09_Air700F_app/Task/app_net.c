@@ -34,14 +34,13 @@ const atCmd_s cmdtable[] =
     {QISEND_CMD, "AT+QISEND"},
     {CIMI_CMD, "AT+CIMI"},
     {CGSN_CMD, "AT+CGSN"},
-    {CCID_CMD, "AT+CCID"},
-    {ICCID_CMD, "AT+ICCID"},
     {CMGF_CMD, "AT+CMGF"},
     {CMGR_CMD, "AT+CMGR"},
     {CMGD_CMD, "AT+CMGD"},
     {CMGS_CMD, "AT+CMGS"},
     {CPMS_CMD, "AT+CPMS"},
     {CNMI_CMD, "AT+CNMI"},
+    {ICCID_CMD, "AT+ICCID"},
     {QSCLK_CMD, "AT+QSCLK"},
     {CFUN_CMD, "AT+CFUN"},
     {QICLOSE_CMD, "AT+QICLOSE"},
@@ -77,7 +76,9 @@ const atCmd_s cmdtable[] =
     {CFGRI_CMD, "AT+CFGRI"},
     {WIFISCAN_CMD, "AT+WIFISCAN"},
     {CSTT_CMD, "AT+CSTT"},
+    {CIICR_CMD, "AT+CIICR"},
     {CFG_CMD, "AT+CFG"},
+    {CIFSR_CMD, "AT+CIFSR"},
 };
 
 /**************************************************
@@ -537,7 +538,7 @@ static void netSetCgdcong(char *apn)
 static void netSetApn(char *apn, char *apnname, char *apnpassword)
 {
     char param[100];
-    sprintf(param, "1,1,\"%s\",\"%s\",\"%s\"", apn, apnname, apnpassword);
+    sprintf(param, "\"%s\",\"%s\",\"%s\"", apn, apnname, apnpassword);
     sendModuleCmd(CSTT_CMD, param);
 }
 
@@ -676,8 +677,8 @@ void netConnectTask(void)
                 moduleState.csqOk = 0;
                 moduleCtrl.cpinCount = 0;
                 sendModuleCmd(AT_CMD, NULL);
-                netSetCgdcong((char *)sysparam.apn);
-                netSetApn((char *)sysparam.apn, (char *)sysparam.apnuser, (char *)sysparam.apnpassword);
+//                netSetCgdcong((char *)sysparam.apn);
+//                netSetApn((char *)sysparam.apn, (char *)sysparam.apnuser, (char *)sysparam.apnpassword);
                 changeProcess(CSQ_STATUS);
 
             }
@@ -767,12 +768,18 @@ void netConnectTask(void)
                 break;
             }
         case CONFIG_STATUS:
+            sendModuleCmd(CPMS_CMD, "\"ME\",\"ME\",\"ME\"");    /*修改短信存储位置*/
+            sendModuleCmd(CNMI_CMD, "2,2");                     /*第二个参数表示缓存在ME中, 不立即上报*/
+            sendModuleCmd(CMGF_CMD, "1");                       /*TEXT模式*/
             sendModuleCmd(CFGRI_CMD, "1,50,50,3");
             sendModuleCmd(CIPMUX_CMD, "1");
             sendModuleCmd(CIPQSEND_CMD, "1");
             sendModuleCmd(CIPRXGET_CMD, "5");
             sendModuleCmd(CFG_CMD, "\"urcdelay\",100");
             sendModuleCmd(CIMI_CMD, NULL);
+            sendModuleCmd(ICCID_CMD, NULL);
+            netSetApn((char *)sysparam.apn, (char *)sysparam.apnuser, (char *)sysparam.apnpassword);
+            sendModuleCmd(CIICR_CMD, NULL);
             changeProcess(QIACT_STATUS);
             break;
         case QIACT_STATUS:
@@ -780,21 +787,14 @@ void netConnectTask(void)
             {
                 moduleState.qipactOk = 0;
                 moduleCtrl.qipactCount = 0;
+                sendModuleCmd(CIFSR_CMD, NULL);
                 changeProcess(NORMAL_STATUS);
-                sendModuleCmd(AT_CMD, NULL);
-                sendModuleCmd(CGSN_CMD, NULL);
             }
             else
             {
-                if (moduleState.qipactSet == 0)
-                {
-                    moduleState.qipactSet = 1;
-                    sendModuleCmd(CGATT_CMD, "1");
-                }
-                else
-                {
-                    sendModuleCmd(CGATT_CMD, "?");
-                }
+
+                sendModuleCmd(CGATT_CMD, "?");
+                
                 if (moduleState.fsmtick >= 45)
                 {
                     LogMessage(DEBUG_ALL, "try QIPACT again");
@@ -983,11 +983,13 @@ static void cimiParser(uint8_t *buf, uint16_t len)
 @param
 @return
 @note
++ICCID: 898604B51122D0032978
+
 **************************************************/
 
 static void iccidParser(uint8_t *buf, uint16_t len)
 {
-    int16_t index, indexa;
+    int16_t index;
     uint8_t *rebuf;
     uint16_t  relen;
     uint8_t snlen, i;
@@ -995,17 +997,18 @@ static void iccidParser(uint8_t *buf, uint16_t len)
     index = my_getstrindex((char *)buf, "+ICCID:", len);
     if (index >= 0)
     {
-        rebuf = buf + index;
-        relen = len - index;
-        indexa = getCharIndex(rebuf, relen, '\r');
-        if (indexa > 8)
+        rebuf = buf + index + 8;
+        relen = len - index + 8;
+        index = getCharIndex(rebuf, relen, '\r');
+        if (index > 8)
         {
-            snlen = indexa - 8;
+            snlen = index;
+            LogPrintf(DEBUG_ALL, "snlen:%d", snlen);
             if (snlen == 20)
             {
                 for (i = 0; i < snlen; i++)
                 {
-                    moduleState.ICCID[i] = rebuf[i + 8];
+                    moduleState.ICCID[i] = rebuf[i];
                 }
                 moduleState.ICCID[snlen] = 0;
                 sprintf(debug, "ICCID:%s", moduleState.ICCID);
@@ -2060,7 +2063,6 @@ uint8_t ciprxgetParser(uint8_t *buf, uint16_t len)
                 }
             }
         }
-
         index = my_getstrindex(rebuf, "+CIPRXGET:", relen);
     }
 
@@ -2264,6 +2266,8 @@ void moduleRecvParser(uint8_t *buf, uint16_t bufsize)
     cipstartRspParser(dataRestore, len);
     wifiscanParser(dataRestore, len);
     qicloseParser(dataRestore, len);
+    cmtParser(dataRestore, len);
+
     if (ciprxgetParser(dataRestore, len))
     {
         if (moduleState.cmd == CIPRXGET_CMD)
@@ -2483,8 +2487,8 @@ void querySendData(uint8_t link)
 
 void queryBatVoltage(void)
 {
-    //    sendModuleCmd(AT_CMD, NULL);
-    //    sendModuleCmd(CBC_CMD, NULL);
+//    sendModuleCmd(AT_CMD, NULL);
+//    sendModuleCmd(CBC_CMD, NULL);
 }
 
 /**************************************************
