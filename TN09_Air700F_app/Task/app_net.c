@@ -646,7 +646,9 @@ void netConnectTask(void)
                 moduleCtrl.atCount = 0;
                 moduleState.atResponOK = 0;
                 moduleState.cpinResponOk = 0;
+                sendModuleCmd(CGSN_CMD, NULL);
                 changeProcess(CPIN_STATUS);
+
             }
             else
             {
