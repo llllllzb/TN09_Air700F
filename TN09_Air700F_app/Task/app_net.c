@@ -245,6 +245,10 @@ void outputNode(void)
             {
                 tickRange = 20;
             }
+            else if (currentnode->currentcmd == WIFISCAN_CMD)
+            {
+				tickRange = 75;
+            }
             else
             {
                 tickRange = 25;
@@ -2507,6 +2511,29 @@ void moduleRecvParser(uint8_t *buf, uint16_t bufsize)
         case CIPSEND_CMD:
             cipsendParser(dataRestore, len);
             break;
+        case CIPRXGET_CMD:
+        	if (my_strstr((char *)dataRestore, "+CME ERROR:", len))
+            {
+                switch (moduleState.curQirdId)
+                {
+                    case NORMAL_LINK:
+                        moduleState.normalLinkQird = 0;
+                        break;
+                    case BLE_LINK:
+                        moduleState.bleLinkQird = 0;
+                        break;
+                    case JT808_LINK:
+                        moduleState.jt808LinkQird = 0;
+                        break;
+                    case HIDDEN_LINK:
+                        moduleState.hideLinkQird = 0;
+                        break;
+                    case AGPS_LINK:
+                        moduleState.agpsLinkQird = 0;
+                       break;
+                }
+                LogPrintf(DEBUG_ALL, "Link[%d] recv err", moduleState.curQirdId);
+            }
         default:
             break;
     }
