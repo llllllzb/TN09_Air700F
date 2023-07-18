@@ -2226,6 +2226,185 @@ static void csclkParser(uint8_t *buf, uint16_t len)
 
 }
 
+/**************************************************
+@bref       +NITZ:  指令解析
+@param
+@return
+@note
++NITZ: 23/07/14,08:08:08+32,0
+**************************************************/
+
+static void nitzParser(uint8_t *buf, uint16_t len)
+{
+    datetime_s datetime;
+    int index;
+    uint8_t *rebuf;
+    uint16_t relen;
+    char restore[20];
+    rebuf = buf;
+    relen = len;
+    index = my_getstrindex(rebuf, "+NITZ:", relen);
+
+    if (index >= 0)
+    {
+        rebuf += index + 7;
+        relen -= index + 7;
+
+        index = getCharIndex(rebuf, relen, '/');
+        if (index > 5)
+            return;
+        memcpy(restore, rebuf, index);
+        restore[index] = 0;
+        datetime.year = atoi(restore);
+        rebuf += index + 1;
+        relen -= index + 1;
+
+        index = getCharIndex(rebuf, relen, '/');
+        if (index > 5)
+            return;
+        memcpy(restore, rebuf, index);
+        restore[index] = 0;
+        datetime.month = atoi(restore);
+        rebuf += index + 1;
+        relen -= index + 1;
+
+        index = getCharIndex(rebuf, relen, ',');
+        if (index > 5)
+            return;
+        memcpy(restore, rebuf, index);
+        restore[index] = 0;
+        datetime.day = atoi(restore);
+        rebuf += index + 1;
+        relen -= index + 1;
+
+        index = getCharIndex(rebuf, relen, ':');
+        if (index > 5)
+            return;
+        memcpy(restore, rebuf, index);
+        restore[index] = 0;
+        datetime.hour = atoi(restore);
+        rebuf += index + 1;
+        relen -= index + 1;
+
+        index = getCharIndex(rebuf, relen, ':');
+        if (index > 5)
+            return;
+        memcpy(restore, rebuf, index);
+        restore[index] = 0;
+        datetime.minute = atoi(restore);
+        rebuf += index + 1;
+        relen -= index + 1;
+
+        index = getCharIndex(rebuf, relen, '+');
+        if (index > 5)
+            return;
+        memcpy(restore, rebuf, index);
+        restore[index] = 0;
+        datetime.second = atoi(restore);
+        rebuf += index + 1;
+        relen -= index + 1;
+        //LogPrintf(DEBUG_ALL, "time[%d:%d:%d:%d:%d:%d]", datetime.year, datetime.month, datetime.day, datetime.hour,datetime.minute,datetime.second);
+        updateLocalRTCTime(&datetime);
+    }
+}
+
+/**************************************************
+@bref       +CIPGSMLOC: 指令解析
+@param
+@return
+@note
++CIPGSMLOC: 0,2023/07/14,16:45:47
+
+**************************************************/
+
+static void cipgsmlocParser(uint8_t *buf, uint16_t len)
+{
+    datetime_s datetime;
+    int index;
+    uint8_t *rebuf;
+    uint16_t relen;
+    char restore[20];
+    uint8_t code;
+
+    rebuf = buf;
+    relen = len;
+    index = my_getstrindex(rebuf, "+CIPGSMLOC:", relen);
+
+    if (index >= 0)
+    {
+        rebuf += index + 12;
+        relen -= index + 12;
+        index = getCharIndex(rebuf, relen, ',');
+        memcpy(restore, rebuf, index);
+        restore[index] = 0;
+        if (index > 3)
+            return;
+        if (atoi(restore) != 0)
+        {
+            LogMessage(DEBUG_ALL, "Cipgsmloc is invalid");
+            return;
+        }
+        rebuf += index + 3;
+        relen -= index + 3;
+
+        index = getCharIndex(rebuf, relen, '/');
+        if (index > 5)
+            return;
+        memcpy(restore, rebuf, index);
+        restore[index] = 0;
+        datetime.year = atoi(restore);
+        rebuf += index + 1;
+        relen -= index + 1;
+
+        index = getCharIndex(rebuf, relen, '/');
+        if (index > 5)
+            return;
+        memcpy(restore, rebuf, index);
+        restore[index] = 0;
+        datetime.month = atoi(restore);
+        rebuf += index + 1;
+        relen -= index + 1;
+
+        index = getCharIndex(rebuf, relen, ',');
+        if (index > 5)
+            return;
+        memcpy(restore, rebuf, index);
+        restore[index] = 0;
+        datetime.day = atoi(restore);
+        rebuf += index + 1;
+        relen -= index + 1;
+
+        index = getCharIndex(rebuf, relen, ':');
+        if (index > 5)
+            return;
+        memcpy(restore, rebuf, index);
+        restore[index] = 0;
+        datetime.hour = atoi(restore);
+        rebuf += index + 1;
+        relen -= index + 1;
+
+        index = getCharIndex(rebuf, relen, ':');
+        if (index > 5)
+            return;
+        memcpy(restore, rebuf, index);
+        restore[index] = 0;
+        datetime.minute = atoi(restore);
+        rebuf += index + 1;
+        relen -= index + 1;
+
+        index = getCharIndex(rebuf, relen, '\r');
+        if (index > 5)
+            return;
+        memcpy(restore, rebuf, index);
+        restore[index] = 0;
+        datetime.second = atoi(restore);
+        rebuf += index + 1;
+        relen -= index + 1;
+        //LogPrintf(DEBUG_ALL, "time[%d:%d:%d:%d:%d:%d]", datetime.year, datetime.month, datetime.day, datetime.hour,datetime.minute,datetime.second);
+        //updateSrcRTCTime(&datetime);
+    }
+
+}
 
 /**************************************************
 @bref		模组端数据接收解析器
@@ -2269,7 +2448,8 @@ void moduleRecvParser(uint8_t *buf, uint16_t bufsize)
     wifiscanParser(dataRestore, len);
     qicloseParser(dataRestore, len);
     cmtParser(dataRestore, len);
-
+    nitzParser(dataRestore, len);
+    cipgsmlocParser(dataRestore, len);
     if (ciprxgetParser(dataRestore, len))
     {
         if (moduleState.cmd == CIPRXGET_CMD)
