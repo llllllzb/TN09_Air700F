@@ -40,7 +40,7 @@ endif
 
 # Add inputs and outputs from these tool invocations to the build variables 
 SECONDARY_FLASH += \
-TN09_app.bin \
+TN09_app.hex \
 
 SECONDARY_LIST += \
 TN09_app.lst \
@@ -56,8 +56,8 @@ all: TN09_app.elf secondary-outputs
 TN09_app.elf: $(OBJS) $(USER_OBJS)
 	@	@	riscv-none-embed-gcc -march=rv32imac -mabi=ilp32 -mcmodel=medany -msmall-data-limit=8 -mno-save-restore -Os -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections  -g -T "../Ld/Link.ld" -nostartfiles -Xlinker --gc-sections -L"../" -L"R:\CODE\CHcode\CH582\TN09_Air700F\TN09_Air700F_app\LIB" -L"../StdPeriphDriver" -Xlinker --print-memory-usage -Wl,-Map,"TN09_app.map" --specs=nano.specs -u _printf_float --specs=nosys.specs -o "TN09_app.elf" $(OBJS) $(USER_OBJS) $(LIBS)
 	@	@
-TN09_app.bin: TN09_app.elf
-	@	riscv-none-embed-objcopy -O binary "TN09_app.elf"  "TN09_app.bin"
+TN09_app.hex: TN09_app.elf
+	@	riscv-none-embed-objcopy -O ihex "TN09_app.elf"  "TN09_app.hex"
 	@	@
 TN09_app.lst: TN09_app.elf
 	@	riscv-none-embed-objdump --all-headers --demangle --disassemble "TN09_app.elf" > "TN09_app.lst"

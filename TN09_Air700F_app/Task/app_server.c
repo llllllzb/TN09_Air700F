@@ -596,6 +596,7 @@ void jt808ServerConnTask(void)
 {
     static uint8_t ret = 1;
     static uint16_t unLoginTick = 0;
+    static uint16_t unackCnt = 0;
     if (isModuleRunNormal() == 0)
     {
         ledStatusUpdate(SYSTEM_LED_NETOK, 0);
@@ -684,6 +685,7 @@ void jt808ServerConnTask(void)
             }
             break;
         case JT808_NORMAL:
+        	sysinfo.mode2runTick = sysinfo.sysTick;
             if (++jt808ServConn.hbtTick >= sysparam.heartbeatgap)
             {
                 jt808ServConn.hbtTick = 0;
@@ -699,10 +701,20 @@ void jt808ServerConnTask(void)
                 {
                     hbtTimeOutId = startTimer(1800, hbtRspTimeOut, 0);
                 }
+                 wakeUpByInt(0, 30);
             }
             if (getTcpNack())
             {
                 querySendData(JT808_LINK);
+                if (unackCnt++ >= 30)
+                {
+					jt808ServerReconnect();
+					unackCnt = 0;
+                }
+            }
+            else
+            {
+				unackCnt = 0;
             }
             if (jt808ServConn.runTick % 3 == 0)
             {
