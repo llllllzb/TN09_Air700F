@@ -312,7 +312,7 @@ void privateServerConnTask(void)
                 querySendData(NORMAL_LINK);
                 if (unackCnt++ >= 30)
                 {
-					privateServerReconnect();
+                    moduleReset();
 					unackCnt = 0;
                 }
             }
@@ -708,7 +708,7 @@ void jt808ServerConnTask(void)
                 querySendData(JT808_LINK);
                 if (unackCnt++ >= 30)
                 {
-					jt808ServerReconnect();
+                    moduleReset();
 					unackCnt = 0;
                 }
             }

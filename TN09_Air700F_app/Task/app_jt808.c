@@ -715,6 +715,7 @@ static uint16_t jt808TerminalPosition(uint8_t *dest, uint8_t *sn, jt808Position_
         {
 	        dest[len++] = 0x54;
 	        dest[len++] = positionInfo->wifiList.apcount * 7 + 1;
+	        dest[len++] = positionInfo->wifiList.apcount;
 	        for (i = 0; i < positionInfo->wifiList.apcount; i++)
 	        {
 				for (j = 0; j < 6; j++)
@@ -729,16 +730,17 @@ static uint16_t jt808TerminalPosition(uint8_t *dest, uint8_t *sn, jt808Position_
         if (sysinfo.jt808Lbs != 0)
         {
 			dest[len++] = 0xE1;
-			dest[len++] = 0x09;
-			dest[len++] = getMCC() >> 8;
-		    dest[len++] = getMCC();
-		    dest[len++] = getMNC();
-		    dest[len++] = getLac() >> 8;
-		    dest[len++] = getLac();
-		    dest[len++] = getCid() >> 24;
-		    dest[len++] = getCid() >> 16;
-		    dest[len++] = getCid() >> 8;
-		    dest[len++] = getCid();
+			dest[len++] = 0x0A;
+			dest[len++] = (getMCC() >> 8) & 0xff;
+		    dest[len++] = getMCC() & 0xff;
+		    dest[len++] = 0;
+		    dest[len++] = getMNC() & 0xff;
+		    dest[len++] = (getLac() >> 8) & 0xff;
+		    dest[len++] = getLac() & 0xff;
+		    dest[len++] = (getCid() >> 24) & 0xff;
+		    dest[len++] = (getCid() >> 16) & 0xff;
+		    dest[len++] = (getCid() >> 8) & 0xff;
+		    dest[len++] = getCid() & 0xff;
 		    sysinfo.jt808Lbs = 0;
         }
     }
