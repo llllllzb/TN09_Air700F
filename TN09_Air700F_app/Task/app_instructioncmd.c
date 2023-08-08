@@ -2,7 +2,7 @@
 #include "app_instructioncmd.h"
 
 #include "app_peripheral.h"
-
+#include "aes.h"
 #include "app_gps.h"
 #include "app_kernal.h"
 #include "app_net.h"
@@ -54,6 +54,8 @@ static uint8_t serverType;
 static void sendMsgWithMode(uint8_t *buf, uint16_t len, insMode_e mode, void *param)
 {
     insParam_s *insparam;
+    char encrypt[128], debug[128];
+    unsigned char encryptLen;
     switch (mode)
     {
         case DEBUG_MODE:
@@ -79,7 +81,9 @@ static void sendMsgWithMode(uint8_t *buf, uint16_t len, insMode_e mode, void *pa
             }
             break;
         case BLE_MODE:
-            appSendNotifyData(buf, len);
+        	sprintf(debug, "RE:%s", buf);
+        	encryptData(encrypt, &encryptLen, debug, len + 3);
+            centralSendData(encrypt, encryptLen);
             break;
         case JT808_MODE:
             jt808MessageSend(buf, len);

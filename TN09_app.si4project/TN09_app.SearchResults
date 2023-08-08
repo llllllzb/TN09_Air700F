@@ -1,12 +1,2 @@
----- modeTryToStop Matches (11 in 4 files) ----
-netConnectTask in app_net.c (TN09_Air700F_app\Task) : 						modeTryToStop();
-netConnectTask in app_net.c (TN09_Air700F_app\Task) :                         modeTryToStop();
-netConnectTask in app_net.c (TN09_Air700F_app\Task) :                         modeTryToStop();
-hbtRspTimeOut in app_server.c (TN09_Air700F_app\Task) :     	modeTryToStop();
-hbtRspTimeOut in app_server.c (TN09_Air700F_app\Task) :     	modeTryToStop();
-privateServerConnTask in app_server.c (TN09_Air700F_app\Task) :                     modeTryToStop();
-app_task.c (TN09_Air700F_app\Task) line 1082 : void modeTryToStop(void)
-modeTryToStop in app_task.c (TN09_Air700F_app\Task) :     LogMessage(DEBUG_ALL, "modeTryToStop");
-modeRun in app_task.c (TN09_Air700F_app\Task) : 				modeTryToStop();
-SysBatDetection in app_task.c (TN09_Air700F_app\Task) : 			modeTryToStop();
-app_task.h (TN09_Air700F_app\Task\inc) line 191 : void modeTryToStop(void);
+---- ==>Write Request,size: Matches (1 in 1 files) ----
+appWriteAttrCB in app_peripheral.c (TN09_Air700F_app\APP) :         LogPrintf(DEBUG_ALL, "UUID[0x%X]==>Write Request,size:%d", uuid, len);

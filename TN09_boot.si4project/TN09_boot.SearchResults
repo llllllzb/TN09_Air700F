@@ -1,3 +1,4 @@
----- IPRXGET Matches (3 in 2 files) ----
-app_net.c (TN09_Air700F_boot\src) line 42 :      {CIPRXGET_CMD, "AT+CIPRXGET"},
-app_net.h (TN09_Air700F_boot\src\inc) line 47 :     CIPRXGET_CMD,
+---- PORT_PWRKEY_H Matches (3 in 3 files) ----
+app_net.h (TN09_Air700F_boot\src\inc) line 9 : #define PWRKEY_HIGH         PORT_PWRKEY_H
+portModuleGpioCfg in app_port.c (TN09_Air700F_boot\src) :     PORT_PWRKEY_H;
+app_port.h (TN09_Air700F_boot\src\inc) line 25 : #define PORT_PWRKEY_H               GPIOA_ResetBits(POWER_PIN)

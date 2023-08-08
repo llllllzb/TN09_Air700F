@@ -1334,7 +1334,7 @@ static void modeChoose(void)
             break;
         case BLE_READY:
             //蓝牙连接成功
-            if (++bleTry.runTick >= 20)
+            if (++bleTry.runTick >= 30)
             {
                 centralTerminate();
                 bleChangeFsm(BLE_DONE);

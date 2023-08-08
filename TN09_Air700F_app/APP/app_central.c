@@ -233,7 +233,7 @@ void appCentralInit(void)
 
 static void doGattMsgEvent(gattMsgEvent_t *pMsgEvt)
 {
-    char debug[100];
+    char debug[256];
     uint8 dataLen, infoLen, numOf, i;
     uint8 *pData;
     uint8_t uuid16[16];
@@ -325,6 +325,25 @@ static void doGattMsgEvent(gattMsgEvent_t *pMsgEvt)
                                 appCentralConnInfo.writeHandle = handle;
                             }
                             break;
+                        /*
+						[18:42:18] Data:(42)[15000A1600F5899B5F8000008000100000E1FF11111700121800F5899B5F8000008000100000E2FF1111]
+						[18:42:19] Data:(42)[1111FFE200001000800000805F9B89F500181200171111FFE100001000800000805F9B89F500160A0015]
+                        */
+                        case 21:
+							uuid = pData[21 * i + 2];
+							uuid <<= 8;
+							uuid |= pData[21 * i + 3];
+
+							handle = pData[21 * i + 16];
+							handle <<= 8;
+							handle |= pData[21 * i + 17];
+							LogPrintf(DEBUG_ALL, "CharUUID: [%04X],handle:0x%04X", uuid, handle);
+							if (uuid == appCentralConnInfo.findUUID)
+                            {
+                                appCentralConnInfo.findIt = 1;
+                                appCentralConnInfo.writeHandle = handle;
+                            }
+                        	break;
                     }
                 }
 
@@ -421,7 +440,11 @@ static void doGattMsgEvent(gattMsgEvent_t *pMsgEvt)
                                 appCentralConnInfo.findIt = 1;
                             }
                             break;
+                        /*ÊÊÅäÓÐ·½À¶ÑÀ*/
                         case 20:
+                        	uuid = pData[20 * i + 2];
+                        	uuid <<= 8;
+                        	uuid |= pData[20 * i + 3];
                             memcpy(uuid16, pData + (20 * i), 16);
                             end = pData[20 * i + 16];
                             end <<= 8;
@@ -432,7 +455,13 @@ static void doGattMsgEvent(gattMsgEvent_t *pMsgEvt)
                             start |= pData[20 * i + 19];
                             byteToHexString(uuid16, debug, 16);
                             debug[32] = 0;
-                            LogPrintf(DEBUG_ALL, "ServUUID: [%s],start:0x%04X,end:0x%04X", debug, start, end);
+                            LogPrintf(DEBUG_ALL, "ServUUID: [%04X],start:0x%04X,end:0x%04X", uuid, start, end);
+                            if (uuid == appCentralConnInfo.findUUID)
+                            {
+	                            appCentralConnInfo.findStart = start;
+	                            appCentralConnInfo.findEnd = end;
+	                            appCentralConnInfo.findIt = 1;
+                            }
                             break;
                     }
                 }
@@ -487,8 +516,11 @@ static void doGattMsgEvent(gattMsgEvent_t *pMsgEvt)
             uint8_t dencryptlen;
             if(dencryptData(dencrypt, &dencryptlen, (char *)pData, dataLen)!=0)
             {
-            	dencrypt[dencryptlen]=0;
-                instructionParser((uint8_t *)dencrypt, dencryptlen, BLE_MODE, NULL);
+            	if (my_strpach(dencrypt,"CMD"))
+            	{
+	            	dencrypt[dencryptlen]=0;
+	                instructionParser((uint8_t *)dencrypt + 14, dencryptlen - 14, BLE_MODE, NULL);
+                }
             }
             break;
         //!< ATT Handle Value Indication

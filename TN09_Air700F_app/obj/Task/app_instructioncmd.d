@@ -14,6 +14,7 @@ Task/app_instructioncmd.o: ../Task/app_instructioncmd.c \
  ../StdPeriphDriver/inc/CH58x_sys.h ../StdPeriphDriver/inc/CH58x_timer.h \
  ../StdPeriphDriver/inc/CH58x_spi.h ../StdPeriphDriver/inc/CH58x_usbdev.h \
  ../StdPeriphDriver/inc/CH58x_usbhost.h ../StdPeriphDriver/inc/ISP583.h \
+ R:\CODE\CHcode\CH582\TN09_Air700F\TN09_Air700F_app\Task\inc/aes.h \
  R:\CODE\CHcode\CH582\TN09_Air700F\TN09_Air700F_app\Task\inc/app_gps.h \
  R:\CODE\CHcode\CH582\TN09_Air700F\TN09_Air700F_app\Task\inc/app_kernal.h \
  R:\CODE\CHcode\CH582\TN09_Air700F\TN09_Air700F_app\Task\inc/app_net.h \
@@ -72,6 +73,8 @@ R:\CODE\CHcode\CH582\TN09_Air700F\TN09_Air700F_app\Task\inc/app_sys.h:
 ../StdPeriphDriver/inc/CH58x_usbhost.h:
 
 ../StdPeriphDriver/inc/ISP583.h:
+
+R:\CODE\CHcode\CH582\TN09_Air700F\TN09_Air700F_app\Task\inc/aes.h:
 
 R:\CODE\CHcode\CH582\TN09_Air700F\TN09_Air700F_app\Task\inc/app_gps.h:
 
