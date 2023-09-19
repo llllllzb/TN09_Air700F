@@ -513,12 +513,13 @@ static void doGattMsgEvent(gattMsgEvent_t *pMsgEvt)
             debug[dataLen * 2] = 0;
             LogPrintf(DEBUG_ALL, "Notify(%d)[%s]", pMsgEvt->msg.handleValueNoti.handle, debug);
             char dencrypt[256];
-            uint8_t dencryptlen;
-            if(dencryptData(dencrypt, &dencryptlen, (char *)pData, dataLen)!=0)
+            unsigned char dencryptlen;
+            if (dencryptData(dencrypt, &dencryptlen, (char *)pData, dataLen)!=0)
             {
+                LogPrintf(DEBUG_ALL, "dencrypt:%s   len:%d", dencrypt, dencryptlen);
             	if (my_strpach(dencrypt,"CMD"))
             	{
-	            	dencrypt[dencryptlen]=0;
+	            	dencrypt[dencryptlen] = 0;
 	                instructionParser((uint8_t *)dencrypt + 14, dencryptlen - 14, BLE_MODE, NULL);
                 }
             }
@@ -683,7 +684,7 @@ void centralExchangeMtc(void)
 bStatus_t centralSendData(uint8 *data, uint8 len)
 {
 	bStatus_t status;
-    status=centralWrite(appCentralConnInfo.writeHandle, data, len);
+    status = centralWrite(appCentralConnInfo.writeHandle, data, len);
 	return status;
 }
 

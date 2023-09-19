@@ -697,8 +697,36 @@ static uint16_t jt808TerminalPosition(uint8_t *dest, uint8_t *sn, jt808Position_
 {
     uint16_t len;
 	uint8_t i, j;
+	uint16_t value;
+	uint8_t *iccid;
     len = jt808PackMessageHead(dest, TERMINAL_POSITION_MSGID, sn, jt808GetSerial(), 0);
     len = jt808PositionInfo(dest, len, positionInfo);
+    //电量百分比
+    value = (uint16_t)(sysinfo.insidevoltage * 100);
+    dest[len++] = 0xE3;
+    dest[len++] = 0x03;
+    dest[len++] = getBatteryLevel();	//电量百分比
+    dest[len++] = (value >> 8) & 0xff;
+    dest[len++] = value & 0xff;
+    //电池电压
+    value = (uint16_t)(sysinfo.outsidevoltage * 100);
+    dest[len++] = 0xE4;
+    dest[len++] = 0x02;
+    dest[len++] = (value >> 8) & 0xff;
+    dest[len++] = value & 0xff;
+    //ICCID
+    iccid = getModuleICCID();
+    dest[len++] = 0xF1;
+    dest[len++] = 0x14;
+	for (i = 0; i < 20; i++)
+	{
+		dest[len++] = iccid[i];
+	}
+    //上报次数
+    dest[len++] = 0xE5;
+    dest[len++] = 0x02;
+	dest[len++] = (dynamicParam.startUpCnt >> 8) & 0xff;
+	dest[len++] = dynamicParam.startUpCnt & 0xff; 
     if (type == 1)
     {
         /*------------------附加消息--------------------*/

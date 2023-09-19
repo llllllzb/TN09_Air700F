@@ -82,6 +82,8 @@ static void sendMsgWithMode(uint8_t *buf, uint16_t len, insMode_e mode, void *pa
             break;
         case BLE_MODE:
         	sprintf(debug, "RE:%s", buf);
+        	debug[len + 3] = 0;
+        	LogPrintf(DEBUG_ALL, "CMDRSP:%s", debug);
         	encryptData(encrypt, &encryptLen, debug, len + 3);
             centralSendData(encrypt, encryptLen);
             break;
