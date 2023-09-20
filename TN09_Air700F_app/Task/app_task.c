@@ -1195,6 +1195,7 @@ void bleConnCallBack(void)
     dynamicParam.bleLinkCnt = 0;
     dynamicParamSaveAll();
     tmos_set_event(appCentralTaskId, APP_WRITEDATA_EVENT);
+    jt808UpdateAlarm(JT808_BLEERR_ALARM, 0);
 }
 
 
@@ -1280,6 +1281,7 @@ static void modeChoose(void)
                     alarmRequestSet(ALARM_BLEALARM_REQUEST);
                     dynamicParam.bleLinkCnt = 0;
                     dynamicParamSaveAll();
+                    jt808UpdateAlarm(JT808_BLEERR_ALARM, 1);
                     changeModeFsm(MODE_START);
                     bleChangeFsm(BLE_IDLE);
                     flag = 0;
@@ -1313,6 +1315,7 @@ static void modeChoose(void)
                     LogPrintf(DEBUG_ALL, "conn fail==>%d", dynamicParam.bleLinkCnt);
                     dynamicParam.bleLinkCnt = 0;
                     alarmRequestSet(ALARM_BLEALARM_REQUEST);
+                    jt808UpdateAlarm(JT808_BLEERR_ALARM, 1);
                     dynamicParamSaveAll();
                     changeModeFsm(MODE_START);
                     bleChangeFsm(BLE_IDLE);
@@ -1343,7 +1346,7 @@ static void modeChoose(void)
         case BLE_DONE:
             ledStatusUpdate(SYSTEM_LED_BLE, 0);
             bleChangeFsm(BLE_IDLE);
-            changeModeFsm(MODE_DONE);
+            modeTryToDone();
             gpsRequestClear(GPS_REQUEST_ALL);
             flag = 0;
             break;
@@ -1662,7 +1665,7 @@ uint8_t SysBatDetection(void)
 			if (waitTick++ >= 6)
 			{
 				waitTick = 0;
-				changeModeFsm(MODE_DONE);
+				modeTryToDone();
 				sysinfo.volCheckReq = 1;
 				LogMessage(DEBUG_ALL, "电池电压偏低，关机");
 			}

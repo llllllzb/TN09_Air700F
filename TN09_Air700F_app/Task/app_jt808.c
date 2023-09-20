@@ -868,7 +868,7 @@ static void jt808gpsRestoreSave(gpsinfo_s *gpsinfo)
 static void jt808SendPosition(uint8_t *sn, gpsinfo_s *gpsinfo)
 {
     int ret = 0;
-    uint8_t dest[200];
+    uint8_t dest[300] = {0};
     uint8_t len;
     if (gpsinfo == NULL)
         return;
