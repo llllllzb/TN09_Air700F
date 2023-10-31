@@ -95,6 +95,10 @@ void getInsid(void);
 void setInsId(void);
 
 void gpsRestoreUpload(void);
+void initOnetimeBattery(void);
+void createBatteryLevel(void);
+uint8_t getBatteryLevel(void);
+
 
 
 void protocolSnRegister(char *sn);

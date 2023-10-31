@@ -683,8 +683,8 @@ void netConnectTask(void)
                 moduleState.csqOk = 0;
                 moduleCtrl.cpinCount = 0;
                 sendModuleCmd(AT_CMD, NULL);
-//                netSetCgdcong((char *)sysparam.apn);
-//                netSetApn((char *)sysparam.apn, (char *)sysparam.apnuser, (char *)sysparam.apnpassword);
+                netSetCgdcong((char *)sysparam.apn);
+                //netSetApn((char *)sysparam.apn, (char *)sysparam.apnuser, (char *)sysparam.apnpassword);
                 changeProcess(CSQ_STATUS);
 
             }
@@ -1392,6 +1392,8 @@ static void wifiscanParser(uint8_t *buf, uint16_t len)
     rebuf = buf;
     relen = len;
     index = my_getstrindex((char *)rebuf, "+WIFISCAN:", relen);
+    if (index < 0)
+    	return;
     wifiList.apcount = 0;
     while (index >= 0)
     {
@@ -1441,8 +1443,8 @@ static void wifiscanParser(uint8_t *buf, uint16_t len)
 	            protocolSend(BLE_LINK, PROTOCOL_F3, &wifiList);
 	        }
 	    }
-        sysinfo.wifiExtendEvt = 0;
     }
+    sysinfo.wifiExtendEvt = 0;
 }
 static void cgsnParser(uint8_t *buf, uint16_t len)
 {
@@ -1797,7 +1799,7 @@ static uint8_t qirdParser(uint8_t *buf, uint16_t len)
 void deactParser(uint8_t *buf, uint16_t len)
 {
     int index;
-    index = my_getstrindex(buf, "+PDP DEACT", len);
+    index = my_getstrindex(buf, "+PDP: DEACT", len);
     if (index < 0)
     {
         return;
@@ -2444,6 +2446,7 @@ void moduleRecvParser(uint8_t *buf, uint16_t bufsize)
     LogMessage(DEBUG_ALL, "---<<<---");
     /*****************************************/
     moduleRspSuccess();
+    deactParser(dataRestore, len);
     csclkParser(dataRestore, len);
     cmtiParser(dataRestore, len);
     cmgrParser(dataRestore, len);

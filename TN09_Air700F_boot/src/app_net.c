@@ -44,6 +44,7 @@ const atCmd_s cmdtable[] =
      {CIPACK_CMD, "AT+CIPACK"},
      {COPS_CMD, "AT+COPS"},
      {WIFISCAN_CMD, "AT+WIFISCAN"},
+     {CGATT_CMD, "AT+CGATT"},
 };
 
 /**************************************************
@@ -566,8 +567,8 @@ void netConnectTask(void)
             sendModuleCmd(CIPMUX_CMD, "1");
             netSetCgdcong((char *)sysparam.apn);
             netSetApn((char *)sysparam.apn, (char *)sysparam.apnuser, (char *)sysparam.apnpassword);
+            sendModuleCmd(CIICR_CMD, NULL);
             changeProcess(QIACT_STATUS);
-
             break;
         case QIACT_STATUS:
             if (moduleState.qipactOk)
@@ -579,12 +580,8 @@ void netConnectTask(void)
             }
             else
             {
-                if (moduleState.qipactSet == 0)
-                {
-                    moduleState.qipactSet = 1;
-                    sendModuleCmd(CIICR_CMD, NULL);
-                }
 
+				sendModuleCmd(CGATT_CMD, "?");
                 if (moduleState.fsmtick >= 45)
                 {
                     LogMessage(DEBUG_ALL, "try QIPACT again");
@@ -737,20 +734,40 @@ static void cgregParser(uint8_t *buf, uint16_t len)
 
 /*------------------------------------合宙----------------------------------------*/
 /**************************************************
-@bref       +CIICR    指令解析
+@bref       +CGATT    指令解析
 @param
 @return
 @note
++CGATT: 1
 
 **************************************************/
-static void ciicrParser(uint8_t *buf, uint16_t len)
-{
-    if (distinguishOK((char *)buf))
-    {
-        moduleState.qipactOk = 1;
-    }
 
+void cgattParser(uint8_t *buf, uint16_t len)
+{
+	uint8_t ret;
+	int index;
+	uint8_t *rebuf;
+	int16_t relen;
+	rebuf = buf;
+	relen = len;
+	index = my_getstrindex((char *)rebuf, "+CGATT:", relen);
+	if (index < 0)
+	{
+		return;
+	}
+	rebuf += index;
+	relen -= index;
+	ret = rebuf[8] - '0';
+	if (ret == 1)
+	{
+		moduleState.qipactOk = 1;
+	}
+	else
+	{
+		moduleState.qipactOk = 0;
+	}
 }
+
 
 /**************************************************
 @bref       +RECEIVE    指令解析
@@ -964,8 +981,8 @@ void moduleRecvParser(uint8_t *buf, uint16_t bufsize)
         case CEREG_CMD:
             cgregParser(dataRestore, len);
             break;
-        case CIICR_CMD:
-            ciicrParser(dataRestore, len);
+        case CGATT_CMD:
+            cgattParser(dataRestore, len);
             break;
         default:
             break;

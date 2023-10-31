@@ -96,6 +96,8 @@ typedef struct
     float outsidevoltage;
     float insidevoltage;
     float lowvoltage;
+    float onetimevol;
+    uint8_t onetimebatlevel;
 
 
 } SystemInfoTypedef;

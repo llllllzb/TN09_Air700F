@@ -1059,7 +1059,7 @@ static void modeShutDownQuickly(void)
     if (sysinfo.wifiExtendEvt == 0 && sysinfo.lbsExtendEvt == 0 && sysinfo.alarmRequest == 0)
     {
         delaytick++;
-        if (delaytick >= 5)
+        if (delaytick >= 15)
         {
             LogMessage(DEBUG_ALL, "modeShutDownQuickly==>shutdown");
             delaytick = 0;
@@ -1444,7 +1444,7 @@ static void modeRun(void)
         case MODE1:
         case MODE3:
             //该模式下工作1分半钟
-            if ((sysinfo.sysTick - sysinfo.runStartTick) >= 90)
+            if ((sysinfo.sysTick - sysinfo.runStartTick) >= 180)
             {
                 gpsRequestClear(GPS_REQUEST_ALL);
                 alarmRequestClear(ALARM_ALL_REQUEST);
@@ -1638,6 +1638,7 @@ void volCheckRequest(void)
 	sysinfo.volCheckReq = 0;
 	sysinfo.canRunFlag = 0;
 	LogMessage(DEBUG_ALL, "volCheckRequest==>OK");
+	initOnetimeBattery();
 }
 
 
@@ -1670,6 +1671,7 @@ uint8_t SysBatDetection(void)
 				LogMessage(DEBUG_ALL, "电池电压偏低，关机");
 			}
         }
+        createBatteryLevel();
         return 0;
     }
 	/*工作时检测电压*/
@@ -1999,7 +2001,7 @@ void doDebugRecvPoll(uint8_t *msg, uint16_t len)
 void myTaskPreInit(void)
 {
     tmos_memset(&sysinfo, 0, sizeof(sysinfo));
-    //sysinfo.logLevel = 9;
+    sysinfo.logLevel = 9;
     SetSysClock(CLK_SOURCE_PLL_60MHz);
     portGpioSetDefCfg();
     portUartCfg(APPUSART2, 1, 115200, doDebugRecvPoll);

@@ -49,6 +49,7 @@ typedef enum
     CIPACK_CMD,
     COPS_CMD,
     WIFISCAN_CMD,
+    CGATT_CMD,
 } atCmdType_e;
 
 

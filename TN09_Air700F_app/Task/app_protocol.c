@@ -547,30 +547,86 @@ void gpsRestoreDataSend(gpsRestore_s *grs, char *dest	, uint16_t *len)
 }
 
 /**************************************************
-@bref		计算电池电量
+@bref		初始化一次性电池电量信息
 @param
 @return
-@note
+@note	
+**************************************************/
+
+void initOnetimeBattery(void)
+{
+	sysinfo.onetimebatlevel = 0;
+	sysinfo.onetimevol = 0.0;
+}
+
+/**************************************************
+@bref		获取本次上报电池电量
+@param
+@return
+@note	
+**************************************************/
+
+void createBatteryLevel(void)
+{
+	uint8_t level = 0;
+	if (sysparam.MODE != MODE1 && sysparam.MODE != MODE3) {
+		return;
+	}
+	if (sysinfo.insidevoltage > 3.0)
+	{
+		level = 100;
+	}
+	else if (sysinfo.insidevoltage < 2.8)
+	{
+		level = 1;
+	}
+	else
+	{
+		level = (uint8_t)((sysinfo.insidevoltage - 2.8) / 0.2 * 100);
+	}
+	sysinfo.onetimebatlevel = level;
+	sysinfo.onetimevol = sysinfo.insidevoltage;
+	LogPrintf(DEBUG_ALL, "createBatteryLevel==>%.2f[%d%%]", sysinfo.onetimevol, sysinfo.onetimebatlevel);
+}
+
+
+/**************************************************
+@bref		生成本次上报电池电量
+@param
+@return
+@note	由于TN09电池在开启模组正常工作的时候电压偏低
+所以每次起来开模组之前，记录当前电压并计算电量，用
+作本次上报的电压电量值
 **************************************************/
 
 uint8_t getBatteryLevel(void)
 {
-    uint8_t level = 0;
-    if (sysinfo.insidevoltage > 3.0)
-    {
-        level = 100;
-
-    }
-    else if (sysinfo.insidevoltage < 2.5)
-    {
-        level = 1;
-    }
+	uint8_t level = 0;
+	if (sysparam.MODE == MODE1 || sysparam.MODE == MODE3)
+	{
+		LogPrintf(DEBUG_ALL, "One-time Batvol[%d%%]: %.2f", sysinfo.onetimebatlevel, sysinfo.insidevoltage);
+		return sysinfo.onetimebatlevel;
+	}
     else
     {
-        level = (uint8_t)((sysinfo.insidevoltage - 2.5) / 0.5 * 100);
+		if (sysinfo.insidevoltage > 3.0)
+		{
+		    level = 100;
+
+		}
+		else if (sysinfo.insidevoltage < 2.5)
+		{
+		    level = 1;
+		}
+		else
+		{
+		    level = (uint8_t)((sysinfo.insidevoltage - 2.5) / 0.5 * 100);
+		}
+		LogPrintf(DEBUG_ALL, "Real-time Batvol[%d%%]: %.2f", level, sysinfo.insidevoltage);
+		return level;
+		
     }
-    LogPrintf(DEBUG_ALL, "Batvol[%d%]: %.2f", level, sysinfo.insidevoltage);
-    return level;
+
 }
 /**************************************************
 @bref		生成13协议

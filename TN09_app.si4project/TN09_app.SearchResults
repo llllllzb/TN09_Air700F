@@ -1,3 +1,1 @@
----- jt808UpdateAlarm Matches (2 in 2 files) ----
-app_jt808.c (TN09_Air700F_app\Task) line 94 : void jt808UpdateAlarm(uint32_t bit, uint8_t onoff)
-app_jt808.h (TN09_Air700F_app\Task\inc) line 120 : void jt808UpdateAlarm(uint32_t bit, uint8_t onoff);
+---- +PDP: DEACT Matches (0 in 0 files) ----
