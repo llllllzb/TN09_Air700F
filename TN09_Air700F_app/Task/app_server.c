@@ -65,23 +65,17 @@ void hbtRspSuccess(void)
 static void moduleRspTimeout(void)
 {
     timeOutId = -1;
-    moduleReset();
+    /* 仍然处于工作状态才复位 */
+    if (sysinfo.runFsm == MODE_RUNING)
+    	moduleReset();
 }
 
 static void hbtRspTimeOut(void)
 {
     LogMessage(DEBUG_ALL, "heartbeat timeout");
     hbtTimeOutId = -1;
-    if (sysparam.protocol == ZT_PROTOCOL_TYPE)
-    {
-    	modeTryToStop();
-        //socketDel(NORMAL_LINK);
-    }
-    else
-    {
-    	modeTryToStop();
-        //socketDel(JT808_LINK);
-    }
+	moduleReset();
+
 }
 
 
@@ -475,7 +469,7 @@ static void hiddenServerConnTask(void)
             {
                 hiddenServerChangeFsm(SERV_LOGIN);
                 hiddenServConn.loginCount++;
-                privateServerReconnect();
+                //privateServerReconnect();
                 if (hiddenServConn.loginCount >= 3)
                 {
                     hiddenServConn.loginCount = 0;

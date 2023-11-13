@@ -22,7 +22,7 @@
 #define BOOT_PARAM_FLAG         0xB0
 
 
-#define EEPROM_VERSION									"TN09_Air700F_V231025_1"
+#define EEPROM_VERSION									"TN09_Air700F_V231113_1"
 
 
 #define JT808_PROTOCOL_TYPE			8

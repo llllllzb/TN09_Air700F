@@ -1395,6 +1395,7 @@ static void wifiscanParser(uint8_t *buf, uint16_t len)
     if (index < 0)
     	return;
     wifiList.apcount = 0;
+    wifiRspSuccess();
     while (index >= 0)
     {
         rebuf += index + 12;

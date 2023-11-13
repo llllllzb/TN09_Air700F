@@ -1447,6 +1447,8 @@ static void modeRun(void)
             if ((sysinfo.sysTick - sysinfo.runStartTick) >= 180)
             {
                 gpsRequestClear(GPS_REQUEST_ALL);
+                lbsRequestClear();
+                wifiRequestClear();
                 alarmRequestClear(ALARM_ALL_REQUEST);
                 changeModeFsm(MODE_STOP);
             }
@@ -1504,8 +1506,24 @@ static void modeStop(void)
 
 static void modeDone(void)
 {
+	static uint8_t tick = 0;
 	if (sysparam.MODE == MODE1 || sysparam.MODE == MODE3 || sysparam.MODE == MODE2)
     {
+
+    	/* 如果设备在该状态模组仍然开机则再次关闭模组 */
+		if (isModulePowerOn())
+		{
+			tick++;
+			if (tick >= 60)
+			{
+				tick = 0;
+				modulePowerOff();
+			}
+		}
+		else{
+			tick = 0;
+		}
+    	
     	//第一个条件是保证执行完睡眠之前的IO配置
     	//第二个条件是保证模组关机
     	if (sysinfo.sleep && isModulePowerOn() == 0)
@@ -1568,9 +1586,9 @@ static void sysAutoReq(void)
         {
             LogPrintf(DEBUG_ALL, "sysAutoReq==>%02d/%02d/%02d %02d:%02d:%02d", year, month, date, hour, minute, second);
             //gpsRequestSet(GPS_REQUEST_UPLOAD_ONE);
+            changeModeFsm(MODE_CHOOSE);
             if (sysinfo.kernalRun == 0)
             {
-            	changeModeFsm(MODE_CHOOSE);
             	volCheckRequest();
                 tmos_set_event(sysinfo.taskId, APP_TASK_RUN_EVENT);
             }
@@ -1587,9 +1605,9 @@ static void sysAutoReq(void)
             	sysinfo.sysMinutes = 0;
                 //gpsRequestSet(GPS_REQUEST_UPLOAD_ONE);
                 LogMessage(DEBUG_ALL, "upload period");
+                changeModeFsm(MODE_CHOOSE);
 	            if (sysinfo.kernalRun == 0)
 	            {
-	                changeModeFsm(MODE_CHOOSE);
 	                volCheckRequest();
 	                tmos_set_event(sysinfo.taskId, APP_TASK_RUN_EVENT);
 	            }
@@ -1758,6 +1776,19 @@ void lbsRequestSet(uint8_t ext)
     sysinfo.lbsExtendEvt |= ext;
 }
 
+/**************************************************
+@bref		清除基站上送请求
+@param
+@return
+@note
+**************************************************/
+
+void lbsRequestClear(void)
+{
+	sysinfo.lbsRequest = 0;
+    sysinfo.lbsExtendEvt = 0;
+}
+
 static void sendLbs(void)
 {
     if (sysinfo.lbsExtendEvt & DEV_EXTEND_OF_MY)
@@ -1792,6 +1823,39 @@ static void lbsRequestTask(void)
     startTimer(70, sendLbs, 0);    
 }
 
+
+static int8_t wifiTimeOutId = -1;
+/**************************************************
+@bref		wifi超时处理
+@param
+@return
+@note
+**************************************************/
+
+void wifiTimeout(void)
+{
+	LogMessage(DEBUG_ALL, "wifiTimeout");
+	wifiRequestClear();
+	wifiTimeOutId = -1;
+}
+
+/**************************************************
+@bref		wifi应答成功
+@param
+@return
+@note
+**************************************************/
+
+void wifiRspSuccess(void)
+{
+	LogMessage(DEBUG_ALL, "wifiRspSuccess");
+	if (wifiTimeOutId != -1)
+	{
+		stopTimer(wifiTimeOutId);
+		wifiTimeOutId = -1;
+	}
+}
+
 /**************************************************
 @bref		设置WIFI上送请求
 @param
@@ -1803,6 +1867,19 @@ void wifiRequestSet(uint8_t ext)
 {
     sysinfo.wifiRequest = 1;
     sysinfo.wifiExtendEvt |= ext;
+}
+
+/**************************************************
+@bref		清除WIFI上送请求
+@param
+@return
+@note
+**************************************************/
+
+void wifiRequestClear(void)
+{
+	sysinfo.wifiRequest = 0;
+	sysinfo.wifiExtendEvt = 0;
 }
 
 
@@ -1823,6 +1900,7 @@ static void wifiRequestTask(void)
         return;
     sysinfo.wifiRequest = 0;
     startTimer(80, moduleGetWifiScan, 0);
+    wifiTimeOutId = startTimer(300, wifiTimeout, 0);
 }
 
 /**************************************************
